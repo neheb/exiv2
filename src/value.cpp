@@ -297,11 +297,6 @@ namespace Exiv2 {
         read(buf);
     }
 
-    StringValueBase::StringValueBase(const StringValueBase &rhs)
-        : Value(rhs), value_(rhs.value_) {}
-
-    StringValueBase::~StringValueBase() = default;
-
     StringValueBase& StringValueBase::operator=(const StringValueBase& rhs)
     {
         if (this == &rhs) return *this;

@@ -173,10 +173,10 @@ namespace Exiv2 {
      */
     class EXIV2API AnyError : public std::exception {
     public:
-        AnyError();
-        AnyError(const AnyError& o);
+        AnyError() = default;
+        AnyError(const AnyError& o) = default;
 
-        ~AnyError() noexcept override;
+        ~AnyError() noexcept override = default;
 
         AnyError& operator=(const AnyError& o) = delete;
         AnyError& operator=(const AnyError&& o) = delete;

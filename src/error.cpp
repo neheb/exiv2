@@ -208,10 +208,6 @@ namespace Exiv2 {
         std::cerr << s;
     }
 
-    AnyError::AnyError() = default;
-    AnyError::AnyError(const AnyError &o) : std::exception(o) {}
-    AnyError::~AnyError() noexcept = default;
-
     template<>
     void BasicError<char>::setMsg()
     {

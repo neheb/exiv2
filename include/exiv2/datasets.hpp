@@ -292,9 +292,9 @@ namespace Exiv2 {
              */
         IptcKey(uint16_t tag, uint16_t record);
         //! Copy constructor
-        IptcKey(const IptcKey& rhs);
+        IptcKey(const IptcKey& rhs) = default;
         //! Destructor
-        ~IptcKey() override;
+        ~IptcKey() override = default;
         //@}
 
         //! @name Manipulators

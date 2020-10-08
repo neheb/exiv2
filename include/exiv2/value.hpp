@@ -351,9 +351,9 @@ namespace Exiv2 {
         //! Constructor for subclasses
         StringValueBase(TypeId typeId, const std::string& buf);
         //! Copy constructor
-        StringValueBase(const StringValueBase& rhs);
+        StringValueBase(const StringValueBase& rhs) = default;
         //! Virtual destructor.
-        ~StringValueBase() override;
+        ~StringValueBase() override = default;
         //@}
 
         //! @name Manipulators
