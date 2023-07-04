@@ -20,15 +20,15 @@ jobs:
       - name: Install packages
         run: |
           sudo apt install -y g++-${{matrix.cxx}} libcurl4-gnutls-dev
-          python3 -m pip install meson ninja
 
-      - name: Compile and Test
+      - uses: BSFishy/meson-build@v1.0.3
         env:
           CXX: g++-${{matrix.cxx}}
-        run: |
-          meson setup "${{github.workspace}}/build" -Dauto_features=${{matrix.deps}} -Dwarning_level=3
-          meson compile -C "${{github.workspace}}/build" --verbose
-          meson test -C "${{github.workspace}}/build" --verbose
+        with:
+          action: test
+          directory: build
+          setup-options: -Dauto_features=${{matrix.deps}} -Dwarning_level=3
+          options: --verbose
   Ubuntu-clang:
     runs-on: ubuntu-20.04
     name: Linux-Clang${{matrix.cxx}}-deps=${{matrix.deps}}
