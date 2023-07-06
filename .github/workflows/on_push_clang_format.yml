@@ -6,6 +6,9 @@ on: [push, pull_request]
 jobs:
   clang-format-checking:
     runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        ver: ['9', '10', '11', '12', '13', '14', '15']
     steps:
       - uses: actions/checkout@v3
       - uses: DoozyX/clang-format-lint-action@v0.16
@@ -13,4 +16,5 @@ jobs:
           source: '.'
           exclude: './xmpsdk ./contrib'
           extensions: 'c,h,cpp,hpp'
+          clangFormatVersion: ${{matrix.ver}}
           style: file

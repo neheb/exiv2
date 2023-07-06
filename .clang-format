@@ -20,5 +20,5 @@ BreakConstructorInitializers: AfterColon
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
 ...
