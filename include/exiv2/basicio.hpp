@@ -651,9 +651,9 @@ class EXIV2API MemIo : public BasicIo {
 
   // NOT IMPLEMENTED
   //! Copy constructor
-  MemIo(const MemIo&) = delete;
+  MemIo(const MemIo&);
   //! Assignment operator
-  MemIo& operator=(const MemIo&) = delete;
+  MemIo& operator=(const MemIo&);
 
  private:
   // Pimpl idiom
