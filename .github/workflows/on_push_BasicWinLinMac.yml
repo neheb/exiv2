@@ -22,31 +22,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: install dependencies
+        run: |
+          vcpkg install inih gtest --triplet x64-windows
+
       - name: Set up Visual Studio shell
         uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      - name: Restore conan cache
-        uses: actions/cache@v3
-        with:
-            path: ${{github.workspace}}/conanCache
-            key: ${{runner.os}}-push-win-${{ hashFiles('conanfile.py') }}
-
-      - name: Install Conan & Common config
-        run: |
-          python -m pip install conan==1.59.0
-          conan profile new --detect default
-          conan profile show default
-          conan profile update settings.compiler="Visual Studio" default
-          conan profile update settings.compiler.version=17 default
-          conan config set storage.path=$Env:GITHUB_WORKSPACE/conanCache
 
       - name: Build
         run: |
           cmake --preset win-release -S . -B build
           cmake --build build --parallel
-
 
       - name: Test
         run: |
@@ -62,15 +48,8 @@ jobs:
 
       - name: install dependencies
         run: |
-          python3 -m pip install conan==1.59.0 ninja
-
-      - name: Conan
-        run: |
-          mkdir build && cd build
-          conan profile new --detect default
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile show default
-          conan install .. -o webready=True --build missing
+          sudo apt update
+          sudo apt install -y libcurl4-gnutls-dev ninja
 
       - name: build and compile
         run: |

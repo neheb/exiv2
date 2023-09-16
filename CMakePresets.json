@@ -10,7 +10,6 @@
       "installDir": "${sourceDir}/build-${presetName}/install",
       "cacheVariables": {
         "BUILD_SHARED_LIBS": true,
-        "CONAN_AUTO_INSTALL": true,
         "EXIV2_BUILD_SAMPLES": true,
         "EXIV2_ENABLE_WEBREADY": true,
         "EXIV2_ENABLE_CURL": true,
@@ -57,9 +56,8 @@
         "lhs": "${hostSystemName}",
         "rhs": "Darwin"
       },
-      "cacheVariables": { 
-        "CMAKE_BUILD_TYPE": "Release",
-        "CONAN_AUTO_INSTALL": false 
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
 
@@ -114,14 +112,12 @@
     {
       "name": "linux-debug-NoConan",
       "displayName": "Same as linux-debug but without automatic conan execution",
-      "inherits": "linux-debug",
-      "cacheVariables": { "CONAN_AUTO_INSTALL": false }
+      "inherits": "linux-debug"
     },
     {
       "name": "linux-release-NoConan",
       "displayName": "Same as linux-release but without automatic conan execution",
-      "inherits": "linux-release",
-      "cacheVariables": { "CONAN_AUTO_INSTALL": false }
+      "inherits": "linux-release"
     },
     {
       "name": "linux-coverage",
@@ -140,7 +136,7 @@
       "displayName": "Same as linux-release-NoConan and with rest of things enabled (doc + NLS)",
       "description": "requires installation of packages: doxygen graphviz gettext",
       "inherits": "linux-release-NoConan",
-      "cacheVariables": { 
+      "cacheVariables": {
         "EXIV2_ENABLE_NLS": true,
         "EXIV2_ENABLE_VIDEO": false,
         "EXIV2_BUILD_DOC": true

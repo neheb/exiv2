@@ -25,21 +25,7 @@ jobs:
 
       - name: install dependencies
         run: |
-          sudo apt install -y tree
-          python3 -m pip install conan==1.59.0 ninja
-
-      - name: Conan common config
-        run: |
-          conan profile new --detect default
-          conan profile update settings.build_type=${{matrix.build_type}} default
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-
-      - name: Run Conan
-        run: |
-          mkdir build-base_linux && cd build-base_linux
-          conan profile list
-          conan profile show default
-          conan install .. -o webready=True --build missing
+          sudo apt install -y libcurl4-gnutls-dev ninja tree
 
       - name: Build
         run: |
