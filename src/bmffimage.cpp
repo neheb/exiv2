@@ -81,7 +81,7 @@ bool enableBMFF(bool enable) {
 }
 
 std::string Iloc::toString() const {
-  return Internal::stringFormat("ID = %u from,length = %u,%u", ID_, start_, length_);
+  return fmt::format("ID = {} from,length = {},{}", ID_, start_, length_);
 }
 
 BmffImage::BmffImage(BasicIo::UniquePtr io, bool /* create */) :
@@ -269,7 +269,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
   if (bTrace) {
     bLF = true;
     out << Internal::indent(depth) << "Exiv2::BmffImage::boxHandler: " << toAscii(box_type)
-        << Internal::stringFormat(" %8zd->%" PRIu64 " ", address, box_length);
+        << fmt::format(" {:8}->{} ", address, box_length);
   }
 
   if (box_length == 1) {
@@ -366,7 +366,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
         id = " *** XMP ***";
       }
       if (bTrace) {
-        out << Internal::stringFormat("ID = %3d ", ID) << name << " " << id;
+        out << fmt::format("ID = {:3} ", ID) << name << " " << id;
       }
     } break;
 
@@ -444,7 +444,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
           uint32_t ldata = data.read_uint32(skip + step - 4, endian_);
           if (bTrace) {
             out << Internal::indent(depth)
-                << Internal::stringFormat("%8zd | %8zd |   ID | %4u | %6u,%6u", address + skip, step, ID, offset, ldata)
+                << fmt::format("{:8} | {:8} |   ID | {:4} | {:6},{:6}", address + skip, step, ID, offset, ldata)
                 << std::endl;
           }
           // save data for post-processing in meta box
@@ -463,7 +463,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
       uint32_t height = data.read_uint32(skip, endian_);
       skip += 4;
       if (bTrace) {
-        out << "pixelWidth_, pixelHeight_ = " << Internal::stringFormat("%d, %d", width, height);
+        out << fmt::format("pixelWidth_, pixelHeight_ = {}, {}", width, height);
       }
       // HEIC files can have multiple ispe records
       // Store largest width/height
@@ -678,8 +678,8 @@ void BmffImage::parseCr3Preview(const DataBuf& data, std::ostream& out, bool bTr
     return "application/octet-stream";
   }();
   if (bTrace) {
-    out << Internal::stringFormat("width,height,size = %zu,%zu,%zu", nativePreview.width_, nativePreview.height_,
-                                  nativePreview.size_);
+    out << fmt::format("width,height,size = {},{},{}", nativePreview.width_, nativePreview.height_,
+                       nativePreview.size_);
   }
   nativePreviews_.push_back(std::move(nativePreview));
 }

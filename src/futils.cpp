@@ -373,7 +373,7 @@ std::string getProcessPath() {
       return "unknown";  // pathbuf not big enough
     auto path = fs::path(pathbuf);
 #elif defined(__sun__)
-    auto path = fs::read_symlink(Internal::stringFormat("/proc/%d/path/a.out", getpid()));
+    auto path = fs::read_symlink(fmt::format("/proc/%d/path/a.out", getpid()));
 #elif defined(__unix__)
     auto path = fs::read_symlink("/proc/self/exe");
 #endif

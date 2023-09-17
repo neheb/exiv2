@@ -116,6 +116,7 @@ jobs:
             libiconv:p
             libinih:p
             zlib:p
+            fmt:p
 
       - name: Build
         run: |
@@ -167,6 +168,7 @@ jobs:
             libexpat-devel
             libiconv-devel
             libinih-devel
+            libfmt-devel
             zlib-devel
 
       - name: Build
