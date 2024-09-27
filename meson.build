@@ -213,7 +213,5 @@ foreach g : gopt
   executable(g, 'samples/@0@.cpp'.format(g), 'app/getopt.cpp', dependencies: exiv2_dep, include_directories: [exiv2inc, ginc])
 endforeach
 
-bindir = 'EXIV2_BINDIR=@0@'.format(meson.current_build_dir())
-subdir('tests')
 subdir('unitTests')
 subdir('po')
