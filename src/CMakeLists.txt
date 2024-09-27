@@ -227,8 +227,7 @@ target_include_directories(exiv2lib_int PUBLIC $<BUILD_INTERFACE:${PROJECT_SOURC
 
 if(EXIV2_ENABLE_WEBREADY)
   if(EXIV2_ENABLE_CURL)
-    target_include_directories(exiv2lib SYSTEM PRIVATE ${CURL_INCLUDE_DIR})
-    target_link_libraries(exiv2lib PRIVATE ${CURL_LIBRARIES})
+    target_link_libraries(exiv2lib PRIVATE CURL::libcurl)
     list(APPEND requires_private_list "libcurl")
   endif()
 endif()
@@ -281,10 +280,10 @@ if(Iconv_FOUND AND Iconv_LIBRARIES)
 endif()
 
 if(EXIV2_ENABLE_INIH)
-  target_link_libraries(exiv2lib_int PRIVATE inih::libinih)
   target_link_libraries(exiv2lib_int PRIVATE inih::inireader)
-  target_link_libraries(exiv2lib PRIVATE inih::libinih)
+  target_link_libraries(exiv2lib_int PRIVATE inih::libinih)
   target_link_libraries(exiv2lib PRIVATE inih::inireader)
+  target_link_libraries(exiv2lib PRIVATE inih::libinih)
   list(APPEND requires_private_list "INIReader")
 endif()
 

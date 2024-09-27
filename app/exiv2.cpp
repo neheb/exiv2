@@ -114,13 +114,8 @@ std::string parseEscapes(const std::string& input);
 // *****************************************************************************
 // Main
 int main(int argc, char* const argv[]) {
-  setlocale(LC_CTYPE, ".utf8");
-
   Exiv2::XmpParser::initialize();
   ::atexit(Exiv2::XmpParser::terminate);
-#ifdef EXV_ENABLE_BMFF
-  Exiv2::enableBMFF();
-#endif
 
 #ifdef EXV_ENABLE_NLS
   setlocale(LC_ALL, "");
@@ -158,7 +153,7 @@ int main(int argc, char* const argv[]) {
     // Process all files
     auto filesCount = params.files_.size();
     if (params.action_ & Action::extract && params.target_ & Params::ctStdInOut && filesCount > 1) {
-      std::cerr << params.progname() << ": " << _("Only one file is allowed when extracting to stdout") << std::endl;
+      std::cerr << params.progname() << ": " << _("Only one file is allowed when extracting to stdout") << '\n';
       returnCode = EXIT_FAILURE;
     } else {
       int w = [=]() {
@@ -174,7 +169,7 @@ int main(int argc, char* const argv[]) {
         // If extracting to stdout then ignore verbose
         if (params.verbose_ && !(params.action_ & Action::extract && params.target_ & Params::ctStdInOut)) {
           std::cout << _("File") << " " << std::setw(w) << std::right << n++ << "/" << filesCount << ": " << file
-                    << std::endl;
+                    << '\n';
         }
         task->setBinary(params.binary_);
         int ret = task->run(file);
@@ -186,7 +181,7 @@ int main(int argc, char* const argv[]) {
       Exiv2::XmpParser::terminate();
     }
   } catch (const std::exception& exc) {
-    std::cerr << "Uncaught exception: " << exc.what() << std::endl;
+    std::cerr << "Uncaught exception: " << exc.what() << '\n';
     returnCode = EXIT_FAILURE;
   }
 
@@ -210,7 +205,7 @@ Params& Params::instance() {
 }
 
 void Params::version(bool verbose, std::ostream& os) {
-  os << EXV_PACKAGE_STRING << std::endl;
+  os << EXV_PACKAGE_STRING << '\n';
   if (Params::instance().greps_.empty() && !verbose) {
     os << "\n"
        << _("This program is free software; you can redistribute it and/or\n"
@@ -974,7 +969,7 @@ void Params::getStdin(Exiv2::DataBuf& buf) {
     if (select(1, &readfds, nullptr, nullptr, &timeout)) {
 #endif
 #ifdef DEBUG
-      std::cerr << "stdin has data" << std::endl;
+      std::cerr << "stdin has data" << '\n';
 #endif
       readFileToBuf(stdin, stdinBuf);
     }
@@ -988,12 +983,12 @@ void Params::getStdin(Exiv2::DataBuf& buf) {
       if (f) {
         readFileToBuf(f, stdinBuf);
         fclose(f);
-        std::cerr << "read stdin from " << path << std::endl;
+        std::cerr << "read stdin from " << path << '\n';
       }
     }
 #endif
 #ifdef DEBUG
-    std::cerr << "getStdin stdinBuf.size_ = " << stdinBuf.size() << std::endl;
+    std::cerr << "getStdin stdinBuf.size_ = " << stdinBuf.size() << '\n';
 #endif
   }
 
@@ -1003,7 +998,7 @@ void Params::getStdin(Exiv2::DataBuf& buf) {
     std::copy(stdinBuf.begin(), stdinBuf.end(), buf.begin());
   }
 #ifdef DEBUG
-  std::cerr << "getStdin stdinBuf.size_ = " << stdinBuf.size() << std::endl;
+  std::cerr << "getStdin stdinBuf.size_ = " << stdinBuf.size() << '\n';
 #endif
 
 }  // Params::getStdin()
@@ -1226,7 +1221,7 @@ int parsePreviewNumbers(Params::PreviewNumbers& previewNumbers, const std::strin
   for (auto&& number : previewNumbers) {
     std::cout << number << ", ";
   }
-  std::cout << std::endl;
+  std::cout << '\n';
 #endif
   return static_cast<int>(k - j);
 }  // parsePreviewNumbers

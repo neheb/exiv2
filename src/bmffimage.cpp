@@ -68,17 +68,12 @@ enum {
 
 // *****************************************************************************
 // class member definitions
-#ifndef EXV_ENABLE_BMFF
 namespace Exiv2 {
 bool enableBMFF(bool) {
+#ifndef EXV_ENABLE_BMFF
   return false;
 }
-}  // namespace Exiv2
 #else
-namespace Exiv2 {
-static bool enabled = false;
-bool enableBMFF(bool enable) {
-  enabled = enable;
   return true;
 }
 
@@ -86,8 +81,8 @@ std::string Iloc::toString() const {
   return Internal::stringFormat("ID = %u from,length = %u,%u", ID_, start_, length_);
 }
 
-BmffImage::BmffImage(BasicIo::UniquePtr io, bool /* create */) :
-    Image(ImageType::bmff, mdExif | mdIptc | mdXmp, std::move(io)) {
+BmffImage::BmffImage(BasicIo::UniquePtr io, bool /* create */, size_t max_box_depth) :
+    Image(ImageType::bmff, mdExif | mdIptc | mdXmp, std::move(io)), max_box_depth_(max_box_depth) {
 }  // BmffImage::BmffImage
 
 std::string BmffImage::toAscii(uint32_t n) {
@@ -98,8 +93,8 @@ std::string BmffImage::toAscii(uint32_t n) {
   // show 0 as _
   std::replace(result.begin(), result.end(), '\0', '_');
   // show non 7-bit printable ascii as .
-  std::replace_if(
-      result.begin(), result.end(), [](char c) { return c < 32 || c > 126; }, '.');
+  auto f = [](char c) { return c < 32 || c > 126; };
+  std::replace_if(result.begin(), result.end(), f, '.');
   return result;
 }
 
@@ -247,7 +242,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
   // never visit a box twice!
   if (depth == 0)
     visits_.clear();
-  if (visits_.find(address) != visits_.end() || visits_.size() > visits_max_) {
+  if (visits_.find(address) != visits_.end() || visits_.size() > visits_max_ || depth >= max_box_depth_) {
     throw Error(ErrorCode::kerCorruptedMetadata);
   }
   visits_.insert(address);
@@ -300,7 +295,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
   const auto buffer_size = box_length - hdrsize;
   if (skipBox(box_type)) {
     if (bTrace) {
-      out << std::endl;
+      out << '\n';
     }
     // The enforce() above checks that restore + buffer_size won't
     // exceed pbox_end, and by implication, won't exceed LONG_MAX
@@ -337,7 +332,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
     // 8.11.6.1
     case TAG_iinf: {
       if (bTrace) {
-        out << std::endl;
+        out << '\n';
         bLF = false;
       }
 
@@ -381,7 +376,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
     case TAG_ipco:
     case TAG_meta: {
       if (bTrace) {
-        out << std::endl;
+        out << '\n';
         bLF = false;
       }
       io_->seek(skip, BasicIo::cur);
@@ -393,14 +388,14 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
         if (ilocs_.find(exifID_) != ilocs_.end()) {
           const Iloc& iloc = ilocs_.find(exifID_)->second;
           if (bTrace) {
-            out << Internal::indent(depth) << "Exiv2::BMFF Exif: " << iloc.toString() << std::endl;
+            out << Internal::indent(depth) << "Exiv2::BMFF Exif: " << iloc.toString() << '\n';
           }
           parseTiff(Internal::Tag::root, iloc.length_, iloc.start_);
         }
         if (ilocs_.find(xmpID_) != ilocs_.end()) {
           const Iloc& iloc = ilocs_.find(xmpID_)->second;
           if (bTrace) {
-            out << Internal::indent(depth) << "Exiv2::BMFF XMP: " << iloc.toString() << std::endl;
+            out << Internal::indent(depth) << "Exiv2::BMFF XMP: " << iloc.toString() << '\n';
           }
           parseXmp(iloc.length_, iloc.start_);
         }
@@ -429,7 +424,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
       if (itemCount && itemCount < box_length / 14 && offsetSize == 4 && lengthSize == 4 &&
           ((box_length - 16) % itemCount) == 0) {
         if (bTrace) {
-          out << std::endl;
+          out << '\n';
           bLF = false;
         }
         auto step = (static_cast<size_t>(box_length) - 16) / itemCount;  // length of data per item.
@@ -451,7 +446,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
           if (bTrace) {
             out << Internal::indent(depth)
                 << Internal::stringFormat("%8zd | %8zd |   ID | %4u | %6u,%6u", address + skip, step, ID, offset, ldata)
-                << std::endl;
+                << '\n';
           }
           // save data for post-processing in meta box
           if (offset && ldata && ID != unknownID_) {
@@ -505,7 +500,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
       io_->read(uuid.data(), uuid.size());
       std::string name = uuidName(uuid);
       if (bTrace) {
-        out << " uuidName " << name << std::endl;
+        out << " uuidName " << name << '\n';
         bLF = false;
       }
       if (name == "cano" || name == "canp") {
@@ -590,7 +585,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
       break; /* do nothing */
   }
   if (bLF && bTrace)
-    out << std::endl;
+    out << '\n';
 
   // return address of next box
   return box_end;
@@ -791,9 +786,6 @@ Image::UniquePtr newBmffInstance(BasicIo::UniquePtr io, bool create) {
 }
 
 bool isBmffType(BasicIo& iIo, bool advance) {
-  if (!enabled) {
-    return false;
-  }
   const int32_t len = 12;
   byte buf[len];
   iIo.read(buf, len);
@@ -812,5 +804,5 @@ bool isBmffType(BasicIo& iIo, bool advance) {
   }
   return matched;
 }
+#endif  // EXV_ENABLE_BMFF
 }  // namespace Exiv2
-#endif

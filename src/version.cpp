@@ -18,7 +18,6 @@
 // + standard includes
 #include <array>
 #include <fstream>
-#include <regex>
 #include <set>
 
 // #1147
@@ -34,8 +33,11 @@
 // platform specific support for getLoadedLibraries
 #if defined(_WIN32) || defined(__CYGWIN__)
 // clang-format off
+#include <winapifamily.h>
 #include <windows.h>
-#include <psapi.h>
+#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY != WINAPI_FAMILY_APP)
+  #include <psapi.h>
+#endif
 // clang-format on
 #if __LP64__
 #ifdef _WIN64
@@ -98,7 +100,7 @@ static bool shouldOutput(const std::vector<std::regex>& greps, const char* key, 
 
 static void output(std::ostream& os, const std::vector<std::regex>& greps, const char* name, const std::string& value) {
   if (shouldOutput(greps, name, value))
-    os << name << "=" << value << std::endl;
+    os << name << "=" << value << '\n';
 }
 
 static void output(std::ostream& os, const std::vector<std::regex>& greps, const char* name, int value) {
@@ -122,7 +124,8 @@ static std::vector<std::string> getLoadedLibraries() {
   std::string path;
 
 #if defined(_WIN32) || defined(__CYGWIN__)
-  // enumerate loaded libraries and determine path to executable
+// enumerate loaded libraries and determine path to executable (unsupported on UWP)
+#if defined(WINAPI_FAMILY) && (WINAPI_FAMILY != WINAPI_FAMILY_APP)
   HMODULE handles[200];
   DWORD cbNeeded;
   if (EnumProcessModules(GetCurrentProcess(), handles, static_cast<DWORD>(std::size(handles)), &cbNeeded)) {
@@ -132,6 +135,7 @@ static std::vector<std::string> getLoadedLibraries() {
       pushPath(szFilename, libs, paths);
     }
   }
+#endif
 #elif defined(__APPLE__)
   // man 3 dyld
   uint32_t count = _dyld_image_count();

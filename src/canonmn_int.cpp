@@ -23,7 +23,6 @@
 #include <regex>
 #include <sstream>
 #include <string>
-
 // *****************************************************************************
 // class member definitions
 namespace Exiv2::Internal {
@@ -388,6 +387,8 @@ constexpr TagDetails canonModelId[] = {
     {0x80000481, "EOS R6 Mark II"},
     {0x80000487, "EOS R8"},
     {0x80000491, "PowerShot V10"},
+    {0x80000495, "EOS R1"},
+    {0x80000496, "EOS R5 Mark II"},
     {0x80000498, "EOS R100"},
     {0x80000520, "EOS D2000C"},
     {0x80000560, "EOS D6000C"},
@@ -491,7 +492,7 @@ constexpr TagInfo CanonMakerNote::tagInfo_[] = {
     {0x0009, "OwnerName", N_("Owner Name"), N_("Owner Name"), IfdId::canonId, SectionId::makerTags, asciiString, -1,
      printValue},
     {0x000a, "0x000a", N_("0x000a"), N_("Unknown"), IfdId::canonId, SectionId::makerTags, unsignedLong, -1,
-     print0x000c},
+     print0x000a},
     {0x000c, "SerialNumber", N_("Serial Number"), N_("Camera serial number"), IfdId::canonId, SectionId::makerTags,
      unsignedLong, -1, print0x000c},
     {0x000d, "CameraInfo", N_("Camera Info"), N_("Camera info"), IfdId::canonId, SectionId::makerTags, unsignedShort,
@@ -512,11 +513,11 @@ constexpr TagInfo CanonMakerNote::tagInfo_[] = {
      SectionId::makerTags, unsignedLong, -1, EXV_PRINT_TAG(canonSerialNumberFormat)},
     {0x001a, "SuperMacro", N_("Super Macro"), N_("Super macro"), IfdId::canonId, SectionId::makerTags, signedShort, -1,
      EXV_PRINT_TAG(canonSuperMacro)},
-    {0x001c, "DateStampMode", N_("DateStampMode"), N_("Data_Stamp_Mode"), IfdId::canonId, SectionId::makerTags,
+    {0x001c, "DateStampMode", N_("DateStampMode"), N_("Date stamp mode"), IfdId::canonId, SectionId::makerTags,
      unsignedShort, -1, EXV_PRINT_TAG(canonDateStampMode)},
     {0x001d, "MyColors", N_("MyColors"), N_("My_Colors"), IfdId::canonId, SectionId::makerTags, unsignedShort, -1,
      printValue},
-    {0x001e, "FirmwareRevision", N_("FirmwareRevision"), N_("Firmware_Revision"), IfdId::canonId, SectionId::makerTags,
+    {0x001e, "FirmwareRevision", N_("FirmwareRevision"), N_("Firmware revision"), IfdId::canonId, SectionId::makerTags,
      unsignedLong, -1, printValue},
     // {0x0023, "Categories", N_("Categories"), N_("Categories"), IfdId::canonId, SectionId::makerTags, unsignedLong -1,
     // EXV_PRINT_TAG(canonCategories)},
@@ -1099,7 +1100,7 @@ constexpr TagInfo CanonMakerNote::tagInfoLe_[] = {
      N_("Lens Serial Number. Convert each byte to hexadecimal to get two "
         "digits of the lens serial number."),
      IfdId::canonLeId, SectionId::makerTags, unsignedByte, -1, printLe0x0000},
-    {0xffff, "(UnkownCanonLensInfoTag)", "(UnkownCanonLensInfoTag)", N_("UnkownCanonLensInfoTag"), IfdId::canonLeId,
+    {0xffff, "(UnknownCanonLensInfoTag)", "(UnknownCanonLensInfoTag)", N_("UnknownCanonLensInfoTag"), IfdId::canonLeId,
      SectionId::makerTags, undefined, 1, printValue}  // important to add end of tag
 };
 
@@ -1326,11 +1327,11 @@ constexpr TagDetails canonInitialAFPointInServo[] = {
 constexpr TagInfo CanonMakerNote::tagInfoAfC_[] = {
     {0x0001, "AFConfigTool", N_("AF Config Tool"), N_("AF Config Tool"), IfdId::canonAfCId, SectionId::makerTags,
      signedLong, -1, printValue},
-    {0x0002, "AFTrackingSensitivity", N_("AF Tracking Sensitivity"), N_("AFTrackingSensitivity"), IfdId::canonAfCId,
+    {0x0002, "AFTrackingSensitivity", N_("AF Tracking Sensitivity"), N_("AF Tracking Sensitivity"), IfdId::canonAfCId,
      SectionId::makerTags, signedLong, -1, printValue},
     {0x0003, "AFAccelDecelTracking", N_("AF Accel Decel Tracking"), N_("AF Accel Decel Tracking"), IfdId::canonAfCId,
      SectionId::makerTags, signedLong, -1, printValue},
-    {0x0004, "AFPointSwitching", N_("AF PointS witching"), N_("AF Point Switching"), IfdId::canonAfCId,
+    {0x0004, "AFPointSwitching", N_("AF Point Switching"), N_("AF Point Switching"), IfdId::canonAfCId,
      SectionId::makerTags, signedLong, -1, printValue},
     {0x0005, "AIServoFirstImage", N_("AI Servo First Image"), N_("AI Servo First Image"), IfdId::canonAfCId,
      SectionId::makerTags, signedLong, -1, EXV_PRINT_TAG(canonAIServoFirstImage)},
@@ -1392,7 +1393,7 @@ constexpr TagDetails canonCsMacro[] = {
 
 //! Quality, tag 0x0003
 constexpr TagDetails canonCsQuality[] = {
-    {-1, N_("n/a")}, {0, N_("unkown")},    {1, N_("Economy")}, {2, N_("Normal")},         {3, N_("Fine")},
+    {-1, N_("n/a")}, {0, N_("unknown")},   {1, N_("Economy")}, {2, N_("Normal")},         {3, N_("Fine")},
     {4, N_("RAW")},  {5, N_("Superfine")}, {7, N_("CRAW")},    {130, N_("Normal Movie")}, {131, N_("Movie (2)")},
 };
 
@@ -2812,12 +2813,32 @@ std::ostream& CanonMakerNote::print0x0008(std::ostream& os, const Value& value, 
   return os << n.substr(0, n.length() - 4) << "-" << n.substr(n.length() - 4);
 }
 
-std::ostream& CanonMakerNote::print0x000c(std::ostream& os, const Value& value, const ExifData*) {
+std::ostream& CanonMakerNote::print0x000a(std::ostream& os, const Value& value, const ExifData*) {
   std::istringstream is(value.toString());
   uint32_t l = 0;
   is >> l;
   return os << std::setw(4) << std::setfill('0') << std::hex << ((l & 0xffff0000) >> 16) << std::setw(5)
             << std::setfill('0') << std::dec << (l & 0x0000ffff);
+}
+
+std::ostream& CanonMakerNote::print0x000c(std::ostream& os, const Value& value, const ExifData* exifData) {
+  std::istringstream is(value.toString());
+
+  if (!exifData) {
+    return os << value;
+  }
+
+  ExifKey key("Exif.Canon.ModelID");
+  auto pos = exifData->findKey(key);
+  // if model is EOS D30
+  if (pos != exifData->end() && pos->value().count() == 1 && pos->value().toInt64() == 0x01140000) {
+    uint32_t l = 0;
+    is >> l;
+    return os << std::setw(4) << std::setfill('0') << std::hex << ((l & 0xffff0000) >> 16) << std::setw(5)
+              << std::setfill('0') << std::dec << (l & 0x0000ffff);
+  } else {
+    return os << value;
+  }
 }
 
 std::ostream& CanonMakerNote::printCs0x0002(std::ostream& os, const Value& value, const ExifData*) {
@@ -2849,6 +2870,33 @@ std::ostream& printCsLensFFFF(std::ostream& os, const Value& value, const ExifDa
   }
 
   return EXV_PRINT_TAG(canonCsLensType)(os, value, metadata);
+}
+
+/**
+ * @brief convert string to float w/o considering locale
+ *
+ * Using std:stof to convert strings to float takes into account the locale
+ * and thus leads to wrong results when converting e.g. "5.6" with a DE locale
+ * which expects "," as decimal instead of ".". See GitHub issue #2746
+ *
+ * Use std::from_chars once that's properly supported by compilers.
+ *
+ * @param str string to convert
+ * @return float value of string
+ */
+float string_to_float(std::string const& str) {
+  float val{};
+  std::stringstream ss;
+  std::locale c_locale("C");
+  ss.imbue(c_locale);
+  ss << str;
+  ss >> val;
+
+  if (ss.fail()) {
+    throw Error(ErrorCode::kerErrorMessage, std::string("canonmn_int.cpp:string_to_float failed for: ") + str);
+  }
+
+  return val;
 }
 
 std::ostream& printCsLensTypeByMetadata(std::ostream& os, const Value& value, const ExifData* metadata) {
@@ -2911,16 +2959,16 @@ std::ostream& printCsLensTypeByMetadata(std::ostream& os, const Value& value, co
     if (!std::regex_search(label, base_match, lens_regex)) {
       // this should never happen, as it would indicate the lens is specified incorrectly
       // in the CanonCsLensType array
-      throw Error(ErrorCode::kerErrorMessage, std::string("Lens regex didn't match for: ") + std::string(label));
+      throw Error(ErrorCode::kerErrorMessage, "Lens regex didn't match for: ", label);
     }
 
-    auto tc = base_match[5].length() > 0 ? std::stof(base_match[5].str()) : 1.f;
+    auto tc = base_match[5].length() > 0 ? string_to_float(base_match[5].str()) : 1.f;
 
-    auto flMax = static_cast<int>(std::stof(base_match[2].str()) * tc);
-    int flMin = base_match[1].length() > 0 ? static_cast<int>(std::stof(base_match[1].str()) * tc) : flMax;
+    auto flMax = static_cast<int>(string_to_float(base_match[2].str()) * tc);
+    int flMin = base_match[1].length() > 0 ? static_cast<int>(string_to_float(base_match[1].str()) * tc) : flMax;
 
-    auto aperMaxTele = std::stof(base_match[4].str()) * tc;
-    auto aperMaxShort = base_match[3].length() > 0 ? std::stof(base_match[3].str()) * tc : aperMaxTele;
+    auto aperMaxTele = string_to_float(base_match[4].str()) * tc;
+    auto aperMaxShort = base_match[3].length() > 0 ? string_to_float(base_match[3].str()) * tc : aperMaxTele;
 
     if (flMin != exifFlMin || flMax != exifFlMax || exifAperMax < (aperMaxShort - .1 * tc) ||
         exifAperMax > (aperMaxTele + .1 * tc)) {

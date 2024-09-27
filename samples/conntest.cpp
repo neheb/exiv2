@@ -75,12 +75,9 @@ void curlcon(const std::string& url, bool useHttp1_0 = false) {
 int main(int argc, const char** argv) {
   Exiv2::XmpParser::initialize();
   ::atexit(Exiv2::XmpParser::terminate);
-#ifdef EXV_ENABLE_BMFF
-  Exiv2::enableBMFF();
-#endif
 
   if (argc < 2) {
-    std::cout << "Usage: " << argv[0] << " url {-http1_0}" << std::endl;
+    std::cout << "Usage: " << argv[0] << " url {-http1_0}" << '\n';
     return EXIT_FAILURE;
   }
   std::string url(argv[1]);
@@ -106,14 +103,14 @@ int main(int argc, const char** argv) {
       isOk = true;
     }
   } catch (const Exiv2::Error& e) {
-    std::cout << "Error: '" << e << "'" << std::endl;
+    std::cout << "Error: '" << e << "'" << '\n';
     return EXIT_FAILURE;
   }
 
   if (!isOk)
-    std::cout << "The protocol is unsupported." << std::endl;
+    std::cout << "The protocol is unsupported." << '\n';
   else
-    std::cout << "OK." << std::endl;
+    std::cout << "OK." << '\n';
   return EXIT_SUCCESS;
 }
 

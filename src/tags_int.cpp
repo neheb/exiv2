@@ -1702,7 +1702,7 @@ constexpr TagInfo ifdTagInfo[] = {
         "used if ColorPlanes is greater than 3. The matrix is stored in row "
         "scan order."),
      IfdId::ifd0Id, SectionId::dngTags, signedRational, -1, printValue},  // DNG 1.6 tag
-    {0xcd3b, "RGBTables", N_("RGB Tables"),
+    {0xcd3f, "RGBTables", N_("RGB Tables"),
      N_("This tag specifies color transforms that can be applied to masked image "
         "regions. Color transforms are specified using RGB-to-RGB color lookup tables. "
         "These tables are associated with Semantic Masks to limit the color transform "
@@ -2108,8 +2108,8 @@ constexpr TagInfo exifTagInfo[] = {
         "for the lens that was used in photography. When the minimum F "
         "number is unknown, the notation is 0/0"),
      IfdId::exifId, SectionId::otherTags, unsignedRational, 4, printLensSpecification},
-    {0xa433, "LensMake", N_("Lens Make"), N_("This tag records the lens manufactor as an ASCII string."), IfdId::exifId,
-     SectionId::otherTags, asciiString, 0, printValue},
+    {0xa433, "LensMake", N_("Lens Make"), N_("This tag records the lens manufacturer as an ASCII string."),
+     IfdId::exifId, SectionId::otherTags, asciiString, 0, printValue},
     {0xa434, "LensModel", N_("Lens Model"),
      N_("This tag records the lens's model name and model number as an "
         "ASCII string."),

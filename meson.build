@@ -17,6 +17,7 @@ else
 endif
 
 if host_machine.system() == 'windows'
+  add_project_arguments('-D_WIN32_WINNT=0x0600', language: 'cpp')
   if cpp.get_argument_syntax() == 'msvc'
     add_project_arguments('-DNOMINMAX', language: 'cpp')
   elif cpp.compiles('#include <time.h>\n#ifdef _UCRT\n#error\n#endif')
@@ -52,6 +53,7 @@ cdata.set('EXV_ENABLE_VIDEO', get_option('video'))
 
 deps = []
 deps += cpp.find_library('ws2_32', required: host_machine.system() == 'windows')
+deps += cpp.find_library('psapi', required: host_machine.system() == 'windows')
 deps += cpp.find_library('procstat', required: host_machine.system() == 'freebsd')
 
 if cpp.get_argument_syntax() == 'gcc' and cpp.version().version_compare('<9')
@@ -68,13 +70,12 @@ if brotli_dep.found()
 endif
 
 if get_option('webready')
-  curl_dep = dependency('libcurl', disabler: true, required: get_option('curl'))
+  curl_dep = dependency('libcurl', required: get_option('curl'))
+  web_dep = declare_dependency(dependencies: [curl_dep])
+  deps += web_dep
 else
-  curl_dep = dependency('', disabler: true, required: false)
-endif
-
-if curl_dep.found()
-  deps += curl_dep
+  web_dep = dependency('', disabler: true, required: false)
+  curl_dep = web_dep
 endif
 
 expat_dep = dependency('expat', disabler: true, required: get_option('xmp'))
@@ -118,7 +119,7 @@ cdata.set('EXV_HAVE_XMP_TOOLKIT', expat_dep.found())
 cdata.set('EXV_HAVE_BROTLI', brotli_dep.found())
 cdata.set('EXV_HAVE_ICONV', iconv_dep.found())
 cdata.set('EXV_HAVE_LIBZ', zlib_dep.found())
-cdata.set('EXV_ENABLE_WEBREADY', get_option('webready'))
+cdata.set('EXV_ENABLE_WEBREADY', web_dep.found())
 cdata.set('EXV_USE_CURL', curl_dep.found())
 cdata.set('EXV_ENABLE_NLS', intl_dep.found())
 cdata.set('EXV_ENABLE_FILESYSTEM', true)
@@ -143,8 +144,12 @@ exiv2_sources = files(
   'app/app_utils.cpp',
   'app/exiv2.cpp',
   'app/getopt.cpp',
-  host_machine.system() == 'windows' ? 'app/wmain.cpp' : [],
 )
+
+if host_machine.system() == 'windows'
+  windows = import('windows')
+  exiv2_sources += windows.compile_resources('app/utf8.rc', depend_files: 'app/utf8.manifest') 
+endif
 
 exiv2inc = include_directories('src', 'include/exiv2')
 executable(
@@ -157,7 +162,7 @@ executable(
 
 samples = {
   'addmoddel': [],
-  'conntest': curl_dep,
+  'conntest': web_dep,
   'convert-test': [],
   'easyaccess-test': [],
   'exifcomment': [],

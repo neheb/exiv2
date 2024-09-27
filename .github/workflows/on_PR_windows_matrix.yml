@@ -10,8 +10,7 @@ on:
       - "*.md"
   workflow_dispatch:
   push:
-    branches:
-    - main
+    branches: [0.28.x, main]
     tags:
     - '!*'
     paths-ignore:
@@ -45,7 +44,7 @@ jobs:
 
       - name: Install Conan & Common config
         run: |
-          python -m pip install conan==1.59.0
+          python -m pip install conan==1.*
           conan config install https://github.com/conan-io/conanclientcert.git
           conan profile new --detect default
           conan profile update settings.build_type=${{matrix.build_type}} default

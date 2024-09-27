@@ -22,9 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: install dependencies
+      - name: Install dependencies
         run: |
-          python3 -m pip install conan==1.59.0 gcovr ninja
+          sudo eatmydata apt-get -y install ninja-build gcovr
+          python3 -m pip install conan==1.*
 
       - name: Conan common config
         run: |

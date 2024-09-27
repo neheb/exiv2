@@ -548,7 +548,7 @@ constexpr StringTagDetails sonyFileFormat[] = {
     {"0 0 0 2", "JPEG"},      {"1 0 0 0", "SR2 1.0"},   {"2 0 0 0", "ARW 1.0"},   {"3 0 0 0", "ARW 2.0"},
     {"3 1 0 0", "ARW 2.1"},   {"3 2 0 0", "ARW 2.2"},   {"3 3 0 0", "ARW 2.3"},   {"3 3 1 0", "ARW 2.3.1"},
     {"3 3 2 0", "ARW 2.3.2"}, {"3 3 3 0", "ARW 2.3.3"}, {"3 3 5 0", "ARW 2.3.5"}, {"4 0 0 0", "ARW 4.0"},
-    {"4 0 1 0", "ARW 4.0.1"}, {"5 0 0 0", "ARW 5.0.0"},
+    {"4 0 1 0", "ARW 4.0.1"}, {"5 0 0 0", "ARW 5.0.0"}, {"5 0 1 0", "ARW 5.0.1"},
 };
 
 //! Lookup table to translate Sony dynamic range optimizer values to readable labels
@@ -1858,7 +1858,7 @@ constexpr TagInfo SonyMakerNote::tagInfoCs_[] = {
     {0x002B, "LongExposureNoiseReduction", N_("Long Exposure Noise Reduction"), N_("Long Exposure Noise Reduction"),
      IfdId::sony1CsId, SectionId::makerTags, unsignedShort, 1, printMinoltaSonyBoolValue},
     // NOTE: A700 only
-    {0x002C, "HighISONoiseReduction", N_("High ISO NoiseReduction"), N_("High ISO NoiseReduction"), IfdId::sony1CsId,
+    {0x002C, "HighISONoiseReduction", N_("High ISO Noise Reduction"), N_("High ISO Noise Reduction"), IfdId::sony1CsId,
      SectionId::makerTags, unsignedShort, 1, printValue},
     // NOTE: A700 only
     {0x002D, "ImageStyle", N_("Image Style"), N_("Image Style"), IfdId::sony1CsId, SectionId::makerTags, unsignedShort,

@@ -575,7 +575,7 @@ std::ostream& PanasonicMakerNote::print0x000f(std::ostream& os, const Value& val
   else if (l0 == 0 && l1 == 225)
     os << _("225-area");
   else if (l0 == 1 && l1 == 0)
-    os << _("Spot focussing");
+    os << _("Spot focusing");
   else if (l0 == 1 && l1 == 1)
     os << _("5-area");
   else if (l0 == 16 && l1 == 0)
@@ -758,6 +758,12 @@ constexpr TagInfo PanasonicMakerNote::tagInfoRaw_[] = {
      unsignedLong, -1, printValue},
     {0x0118, "RawDataOffset", N_("Raw Data Offset"), N_("Raw data offset"), IfdId::panaRawId, SectionId::panaRaw,
      unsignedLong, -1, printValue},
+    {0x0119, "DistortionInfo", N_("Distortion Info"), N_("Distortion info"), IfdId::panaRawId, SectionId::panaRaw,
+     signedShort, -1, printValue},
+    {0x011c, "Gamma", N_("Gamma"), N_("Gamma"), IfdId::panaRawId, SectionId::panaRaw, unsignedShort, -1, printValue},
+    {0x013b, "Artist", N_("Artist"), N_("Artist"), IfdId::panaRawId, SectionId::panaRaw, asciiString, -1, printValue},
+    {0x8298, "Copyright", N_("Copyright"), N_("Copyright"), IfdId::panaRawId, SectionId::panaRaw, asciiString, -1,
+     printValue},
     {0x8769, "ExifTag", N_("Exif IFD Pointer"), N_("A pointer to the Exif IFD"), IfdId::panaRawId, SectionId::panaRaw,
      unsignedLong, -1, printValue},
     {0x8825, "GPSTag", N_("GPS Info IFD Pointer"), N_("A pointer to the GPS Info IFD"), IfdId::panaRawId,

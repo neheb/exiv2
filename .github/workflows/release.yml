@@ -24,8 +24,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt install -y gettext doxygen graphviz
-          python -m pip install conan==1.59.0 ninja
+          sudo apt install -y gettext doxygen graphviz ninja-build
+          python -m pip install conan==1.*
 
       - name: Conan common config
         run: |
@@ -42,7 +42,7 @@ jobs:
 
       - name: Build packaged release
         run: |
-          cmake --preset linux-all -S . -B build -DEXIV2_TEAM_PACKAGING=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DEXIV2_ENABLE_WEBREADY=OFF -DEXIV2_ENABLE_CURL=OFF
+          cmake --preset linux-all -S . -B build -DEXIV2_TEAM_PACKAGING=ON -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON -DEXIV2_ENABLE_WEBREADY=OFF -DEXIV2_ENABLE_CURL=OFF -DEXIV2_BUILD_SAMPLES=OFF
           cmake --build build -t doc
           cmake --build build -t package
 
@@ -113,7 +113,7 @@ jobs:
 
       - name: Install Conan & Common config
         run: |
-          python -m pip install conan==1.59.0
+          python -m pip install conan==1.*
           conan profile new --detect default
           conan profile show default
           conan profile update settings.build_type=Release default
@@ -129,7 +129,7 @@ jobs:
 
       - name: Build packaged release
         run: |
-          cmake --preset win-release -S . -B build -DEXIV2_TEAM_PACKAGING=ON -DEXIV2_BUILD_DOC=ON -DEXIV2_ENABLE_WEBREADY=OFF -DEXIV2_ENABLE_CURL=OFF
+          cmake --preset win-release -S . -B build -DEXIV2_TEAM_PACKAGING=ON -DEXIV2_BUILD_DOC=ON -DEXIV2_ENABLE_WEBREADY=OFF -DEXIV2_ENABLE_CURL=OFF -DEXIV2_BUILD_SAMPLES=OFF
           cmake --build build --parallel -t doc
           cmake --build build --parallel -t package
 
@@ -212,7 +212,7 @@ jobs:
       - name: List downloaded files
         run: tree -L 3
 
-      - uses: softprops/action-gh-release@v1
+      - uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
