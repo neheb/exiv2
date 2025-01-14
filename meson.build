@@ -17,6 +17,7 @@ else
 endif
 
 if host_machine.system() == 'windows'
+  add_project_arguments('-D_WIN32_WINNT=0x0600', language: 'cpp')
   if cpp.get_argument_syntax() == 'msvc'
     add_project_arguments('-DNOMINMAX', language: 'cpp')
   elif cpp.compiles('#include <time.h>\n#ifdef _UCRT\n#error\n#endif')
@@ -45,6 +46,7 @@ cdata.set('EXV_PACKAGE_STRING', '@0@ @1@'.format(meson.project_name(), cdata.get
 
 cdata.set('EXV_HAVE_STRERROR_R', cpp.has_function('strerror_r'))
 cdata.set('EXV_STRERROR_R_CHAR_P', not cpp.compiles('#define _GNU_SOURCE\n#include <string.h>\nint strerror_r(int,char*,size_t);int main(){}'))
+cdata.set('EXV_HAVE_STD_FORMAT', cpp.has_header_symbol('format', 'std::format'))
 
 cdata.set('EXV_ENABLE_BMFF', get_option('bmff'))
 cdata.set('EXV_HAVE_LENSDATA', get_option('lensdata'))
@@ -52,9 +54,10 @@ cdata.set('EXV_ENABLE_VIDEO', get_option('video'))
 
 deps = []
 deps += cpp.find_library('ws2_32', required: host_machine.system() == 'windows')
+deps += cpp.find_library('psapi', required: host_machine.system() == 'windows')
 deps += cpp.find_library('procstat', required: host_machine.system() == 'freebsd')
 
-if not cpp.has_header_symbol('format', '__cpp_lib_format')
+if not cpp.has_header_symbol('format', 'std::format')
   deps += dependency('fmt')
 endif
 
@@ -150,7 +153,7 @@ exiv2_sources = files(
 
 if host_machine.system() == 'windows'
   windows = import('windows')
-  exiv2_sources += windows.compile_resources('app/utf8.rc', depend_files: 'app/utf8.manifest') 
+  exiv2_sources += windows.compile_resources('app/utf8.rc', depend_files: 'app/utf8.manifest')
 endif
 
 exiv2inc = include_directories('src', 'include/exiv2')
