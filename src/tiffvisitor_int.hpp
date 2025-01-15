@@ -6,6 +6,7 @@
 // *****************************************************************************
 // included header files
 #include "exif.hpp"
+#include "tiffcomposite_int.hpp"
 #include "tifffwd_int.hpp"
 #include "types.hpp"
 
