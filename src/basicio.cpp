@@ -69,12 +69,18 @@ class FileIo::Impl {
  public:
   //! Constructor
   explicit Impl(std::string path);
+#ifdef _WIN32
+  explicit Impl(std::wstring path);
+#endif
   ~Impl() = default;
   // Enumerations
   //! Mode of operation
   enum OpMode { opRead, opWrite, opSeek };
   // DATA
-  std::string path_;       //!< (Standard) path
+  std::string path_;  //!< (Standard) path
+#ifdef _WIN32
+  std::wstring wpath_;  //!< UCS2 path
+#endif
   std::string openMode_;   //!< File open mode
   FILE* fp_{};             //!< File stream pointer
   OpMode opMode_{opSeek};  //!< File open mode
@@ -110,7 +116,21 @@ class FileIo::Impl {
 };
 
 FileIo::Impl::Impl(std::string path) : path_(std::move(path)) {
+#ifdef _WIN32
+  wchar_t t[512];
+  const auto nw = MultiByteToWideChar(CP_UTF8, 0, path_.data(), static_cast<int>(path_.size()), t, 512);
+  wpath_.assign(t, nw);
+#endif
 }
+
+#ifdef _WIN32
+FileIo::Impl::Impl(std::wstring path) : wpath_(std::move(path)) {
+  char t[1024];
+  const auto nc =
+      WideCharToMultiByte(CP_UTF8, 0, wpath_.data(), static_cast<int>(wpath_.size()), t, 1024, nullptr, nullptr);
+  path_.assign(t, nc);
+}
+#endif
 
 int FileIo::Impl::switchMode(OpMode opMode) {
   if (opMode_ == opMode)
@@ -159,7 +179,11 @@ int FileIo::Impl::switchMode(OpMode opMode) {
   std::fclose(fp_);
   openMode_ = "r+b";
   opMode_ = opSeek;
+#ifdef _WIN32
+  fp_ = _wfopen(wpath_.c_str(), L"r+b");
+#else
   fp_ = std::fopen(path_.c_str(), openMode_.c_str());
+#endif
   if (!fp_)
     return 1;
 #ifdef _WIN32
@@ -170,9 +194,14 @@ int FileIo::Impl::switchMode(OpMode opMode) {
 }  // FileIo::Impl::switchMode
 
 int FileIo::Impl::stat(StructStat& buf) const {
+#ifdef _WIN32
+  const auto& file = wpath_;
+#else
+  const auto& file = path_;
+#endif
   try {
-    buf.st_size = fs::file_size(path_);
-    buf.st_mode = fs::status(path_).permissions();
+    buf.st_size = fs::file_size(file);
+    buf.st_mode = fs::status(file).permissions();
     return 0;
   } catch (const fs::filesystem_error&) {
     return -1;
@@ -181,6 +210,11 @@ int FileIo::Impl::stat(StructStat& buf) const {
 
 FileIo::FileIo(const std::string& path) : p_(std::make_unique<Impl>(path)) {
 }
+
+#ifdef _WIN32
+FileIo::FileIo(const std::wstring& wpath) : p_(std::make_unique<Impl>(wpath)) {
+}
+#endif
 
 FileIo::~FileIo() {
   close();
@@ -296,7 +330,23 @@ byte* FileIo::mmap(bool isWriteable) {
 void FileIo::setPath(const std::string& path) {
   close();
   p_->path_ = path;
+#ifdef _WIN32
+  wchar_t t[512];
+  const auto nw = MultiByteToWideChar(CP_UTF8, 0, p_->path_.data(), static_cast<int>(p_->path_.size()), t, 512);
+  p_->wpath_.assign(t, nw);
+#endif
 }
+
+#ifdef _WIN32
+void FileIo::setPath(const std::wstring& path) {
+  close();
+  p_->wpath_ = path;
+  char t[1024];
+  const auto nc = WideCharToMultiByte(CP_UTF8, 0, p_->wpath_.data(), static_cast<int>(p_->wpath_.size()), t, 1024,
+                                      nullptr, nullptr);
+  p_->path_.assign(t, nc);
+}
+#endif
 
 size_t FileIo::write(const byte* data, size_t wcount) {
   if (p_->switchMode(Impl::opWrite) != 0)
@@ -480,7 +530,13 @@ int FileIo::open(const std::string& mode) {
   close();
   p_->openMode_ = mode;
   p_->opMode_ = Impl::opSeek;
+#ifdef _WIN32
+  wchar_t wmode[10];
+  MultiByteToWideChar(CP_UTF8, 0, mode.c_str(), -1, wmode, 10);
+  p_->fp_ = _wfopen(p_->wpath_.c_str(), wmode);
+#else
   p_->fp_ = ::fopen(path().c_str(), mode.c_str());
+#endif
   if (!p_->fp_)
     return 1;
   return 0;
@@ -853,6 +909,18 @@ XPathIo::XPathIo(const std::string& path) {
     ReadDataUri(path);
 }
 
+#ifdef _WIN32
+XPathIo::XPathIo(const std::wstring& wpath) {
+  std::string path;
+  path.assign(wpath.begin(), wpath.end());
+  Protocol prot = fileProtocol(path);
+  if (prot == pStdin)
+    ReadStdin();
+  else if (prot == pDataUri)
+    ReadDataUri(path);
+}
+#endif
+
 void XPathIo::ReadStdin() {
   if (isatty(fileno(stdin)))
     throw Error(ErrorCode::kerInputDataReadFailed);
@@ -892,6 +960,11 @@ void XPathIo::ReadDataUri(const std::string& path) {
 #elif defined(EXV_ENABLE_FILESYSTEM)
 XPathIo::XPathIo(const std::string& orgPath) : FileIo(XPathIo::writeDataToFile(orgPath)), tempFilePath_(path()) {
 }
+
+#ifdef _WIN32
+XPathIo::XPathIo(const std::wstring& worgPath) : FileIo(XPathIo::writeDataToFile(worgPath)), tempFilePath_(path()) {
+}
+#endif
 
 XPathIo::~XPathIo() {
   if (isTemp_ && !fs::remove(tempFilePath_)) {
@@ -976,6 +1049,14 @@ std::string XPathIo::writeDataToFile(const std::string& orgPath) {
   return path;
 }
 
+#ifdef _WIN32
+std::string XPathIo::writeDataToFile(const std::wstring& wOrgPath) {
+  std::string orgPath;
+  orgPath.assign(wOrgPath.begin(), wOrgPath.end());
+  return XPathIo::writeDataToFile(orgPath);
+}
+#endif
+
 #endif
 
 //! Internal Pimpl abstract structure of class RemoteIo.
@@ -983,6 +1064,9 @@ class RemoteIo::Impl {
  public:
   //! Constructor
   Impl(const std::string& url, size_t blockSize);
+#ifdef _WIN32
+  Impl(const std::wstring& wpath, size_t blockSize);
+#endif
   //! Destructor. Releases all managed memory.
   virtual ~Impl();
 
@@ -991,6 +1075,9 @@ class RemoteIo::Impl {
 
   // DATA
   std::string path_;              //!< (Standard) path
+#ifdef _WIN32
+  std::wstring wpath_;  //!< Unicode path
+#endif
   size_t blockSize_;              //!< Size of the block memory.
   BlockMap* blocksMap_{nullptr};  //!< An array contains all blocksMap
   size_t size_{0};                //!< The file size
@@ -1041,6 +1128,12 @@ class RemoteIo::Impl {
 RemoteIo::Impl::Impl(const std::string& url, size_t blockSize) :
     path_(url), blockSize_(blockSize), protocol_(fileProtocol(url)) {
 }
+
+#ifdef _WIN32
+RemoteIo::Impl::Impl(const std::wstring& wurl, size_t blockSize) :
+    wpath_(wurl), blockSize_(blockSize), protocol_(fileProtocol(wurl)) {
+}
+#endif
 
 size_t RemoteIo::Impl::populateBlocks(size_t lowBlock, size_t highBlock) {
   // optimize: ignore all true blocks on left & right sides.
@@ -1368,6 +1461,10 @@ class HttpIo::HttpImpl : public Impl {
  public:
   //! Constructor
   HttpImpl(const std::string& url, size_t blockSize);
+#ifdef _WIN32
+  //! Constructor accepting a unicode path in an std::wstring
+  HttpImpl(const std::wstring& wpath, size_t blockSize);
+#endif
   Exiv2::Uri hostInfo_;  //!< the host information extracted from the path
 
   // METHODS
@@ -1407,6 +1504,16 @@ HttpIo::HttpImpl::HttpImpl(const std::string& url, size_t blockSize) : Impl(url,
   Exiv2::Uri::Decode(hostInfo_);
 }
 
+#ifdef _WIN32
+HttpIo::HttpImpl::HttpImpl(const std::wstring& wurl, size_t blockSize) : Impl(wurl, blockSize) {
+  std::string url;
+  url.assign(wurl.begin(), wurl.end());
+  path_ = url;
+  hostInfo_ = Exiv2::Uri::Parse(url);
+  Exiv2::Uri::Decode(hostInfo_);
+}
+#endif
+
 int64_t HttpIo::HttpImpl::getFileLength() {
   Exiv2::Dictionary response;
   Exiv2::Dictionary request;
@@ -1422,7 +1529,7 @@ int64_t HttpIo::HttpImpl::getFileLength() {
   }
 
   auto lengthIter = response.find("Content-Length");
-  return (lengthIter == response.end()) ? -1 : atol((lengthIter->second).c_str());
+  return (lengthIter == response.end()) ? -1 : std::stoll(lengthIter->second);
 }
 
 void HttpIo::HttpImpl::getDataByRange(size_t lowBlock, size_t highBlock, std::string& response) {
@@ -1495,6 +1602,12 @@ void HttpIo::HttpImpl::writeRemote(const byte* data, size_t size, size_t from, s
 HttpIo::HttpIo(const std::string& url, size_t blockSize) {
   p_ = std::make_unique<HttpImpl>(url, blockSize);
 }
+
+#ifdef _WIN32
+HttpIo::HttpIo(const std::wstring& url, size_t blockSize) {
+  p_ = std::make_unique<HttpImpl>(url, blockSize);
+}
+#endif
 #endif
 
 #ifdef EXV_USE_CURL
@@ -1560,7 +1673,7 @@ CurlIo::CurlImpl::CurlImpl(const std::string& url, size_t blockSize) : Impl(url,
   }
 
   std::string timeout = getEnv(envTIMEOUT);
-  timeout_ = atol(timeout.c_str());
+  timeout_ = std::stol(timeout);
   if (timeout_ == 0) {
     throw Error(ErrorCode::kerErrorMessage, "Timeout Environmental Variable must be a positive integer.");
   }

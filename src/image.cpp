@@ -55,6 +55,10 @@
 #include <bit>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 // *****************************************************************************
 namespace {
 using namespace Exiv2;
@@ -126,6 +130,14 @@ std::string pathOfFileUrl(const std::string& url) {
   size_t found = path.find('/');
   return (found == std::string::npos) ? path : path.substr(found);
 }
+
+#ifdef _WIN32
+std::wstring pathOfFileUrl(const std::wstring& url) {
+  std::wstring path = url.substr(7);
+  size_t found = path.find('/');
+  return (found == std::wstring::npos) ? path : path.substr(found);
+}
+#endif
 #endif
 
 }  // namespace
@@ -830,12 +842,51 @@ BasicIo::UniquePtr ImageFactory::createIo(const std::string& path, [[maybe_unuse
 #endif
 }  // ImageFactory::createIo
 
+#ifdef _WIN32
+BasicIo::UniquePtr ImageFactory::createIo(const std::wstring& wpath, [[maybe_unused]] bool useCurl) {
+  Protocol fProt = fileProtocol(wpath);
+
+#ifdef EXV_USE_CURL
+  if (useCurl && (fProt == pHttp || fProt == pHttps || fProt == pFtp)) {
+    return std::make_unique<CurlIo>(wpath);  // may throw
+  }
+#endif
+
+#ifdef EXV_ENABLE_WEBREADY
+  if (fProt == pHttp)
+    return std::make_unique<HttpIo>(wpath);  // may throw
+#endif
+#ifdef EXV_ENABLE_FILESYSTEM
+  if (fProt == pFileUri)
+    return std::make_unique<FileIo>(pathOfFileUrl(wpath));
+  if (fProt == pStdin || fProt == pDataUri)
+    return std::make_unique<XPathIo>(wpath);  // may throw
+
+  return std::make_unique<FileIo>(wpath);
+#else
+  throw Error(ErrorCode::kerFileAccessDisabled, wpath);
+#endif
+}
+#endif
+
 Image::UniquePtr ImageFactory::open(const std::string& path, bool useCurl) {
   auto image = open(ImageFactory::createIo(path, useCurl));  // may throw
   if (!image)
     throw Error(ErrorCode::kerFileContainsUnknownImageType, path);
   return image;
 }
+
+#ifdef _WIN32
+Image::UniquePtr ImageFactory::open(const std::wstring& path, bool useCurl) {
+  auto image = open(ImageFactory::createIo(path, useCurl));  // may throw
+  if (!image) {
+    char t[1024];
+    WideCharToMultiByte(CP_UTF8, 0, path.c_str(), -1, t, 1024, nullptr, nullptr);
+    throw Error(ErrorCode::kerFileContainsUnknownImageType, t);
+  }
+  return image;
+}
+#endif
 
 Image::UniquePtr ImageFactory::open(const byte* data, size_t size) {
   auto image = open(std::make_unique<MemIo>(data, size));  // may throw
@@ -871,6 +922,23 @@ Image::UniquePtr ImageFactory::create(ImageType type, const std::string& path) {
     throw Error(ErrorCode::kerUnsupportedImageType, static_cast<int>(type));
   return image;
 }
+
+#ifdef _WIN32
+Image::UniquePtr ImageFactory::create(ImageType type, const std::wstring& wpath) {
+  auto fileIo = std::make_unique<FileIo>(wpath);
+  // Create or overwrite the file, then close it
+  if (fileIo->open("w+b") != 0) {
+    throw Error(ErrorCode::kerFileOpenFailed, wpath.c_str(), "w+b", strError());
+  }
+  fileIo->close();
+
+  BasicIo::UniquePtr io(std::move(fileIo));
+  auto image = create(type, std::move(io));
+  if (!image)
+    throw Error(ErrorCode::kerUnsupportedImageType, static_cast<int>(type));
+  return image;
+}
+#endif
 #endif
 
 Image::UniquePtr ImageFactory::create(ImageType type) {
