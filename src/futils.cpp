@@ -13,18 +13,9 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <sstream>
 #include <stdexcept>
-
-#ifdef EXV_ENABLE_FILESYSTEM
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace fs = std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#endif
-#endif
 
 #if defined(_WIN32)
 // clang-format off
@@ -61,6 +52,8 @@ namespace fs = std::experimental::filesystem;
 #ifndef _MAX_PATH
 #define _MAX_PATH 1024
 #endif
+
+namespace fs = std::filesystem;
 
 namespace Exiv2 {
 constexpr std::array<const char*, 2> ENVARDEF{
