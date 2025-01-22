@@ -13,18 +13,9 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <filesystem>
 #include <sstream>
 #include <stdexcept>
-
-#ifdef EXV_ENABLE_FILESYSTEM
-#if __has_include(<filesystem>)
-#include <filesystem>
-namespace fs = std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#endif
-#endif
 
 #if defined(_WIN32)
 // clang-format off
@@ -61,6 +52,8 @@ namespace fs = std::experimental::filesystem;
 #ifndef _MAX_PATH
 #define _MAX_PATH 1024
 #endif
+
+namespace fs = std::filesystem;
 
 namespace Exiv2 {
 constexpr std::array<const char*, 2> ENVARDEF{
@@ -221,7 +214,7 @@ Protocol fileProtocol(const std::string& path) {
     if (result != pFile)
       break;
 
-    if (Exiv2::Internal::startsWith(path, prot.name))
+    if (path.starts_with(prot.name))
       // URL's require data.  Stdin == "-" and no further data
       if (prot.isUrl ? path.size() > prot.name.size() : path.size() == prot.name.size())
         result = prot.prot;
@@ -292,7 +285,7 @@ Uri Uri::Parse(const std::string& uri) {
 
   if (protocolEnd != uriEnd) {
     auto prot = std::string(protocolEnd, uriEnd);
-    if ((prot.length() > 3) && (prot.substr(0, 3) == "://")) {
+    if (prot.starts_with("://")) {
       result.Protocol = std::string(protocolStart, protocolEnd);
       protocolEnd += 3;  //      ://
     } else

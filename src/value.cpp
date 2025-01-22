@@ -8,6 +8,8 @@
 #include "error.hpp"
 #include "types.hpp"
 
+#include "image_int.hpp"
+
 // + standard includes
 #include <sstream>
 
@@ -303,7 +305,7 @@ CommentValue::CommentValue(const std::string& comment) : StringValueBase(Exiv2::
 int CommentValue::read(const std::string& comment) {
   std::string c = comment;
   CharsetId charsetId = undefined;
-  if (comment.length() > 8 && comment.substr(0, 8) == "charset=") {
+  if (comment.starts_with("charset=")) {
     const std::string::size_type pos = comment.find_first_of(' ');
     std::string name = comment.substr(8, pos - 8);
     // Strip quotes (so you can also specify the charset without quotes)
@@ -480,7 +482,7 @@ int XmpTextValue::read(const std::string& buf) {
   // support a type=Alt,Bag,Seq,Struct indicator
   std::string b = buf;
   std::string type;
-  if (buf.length() > 5 && buf.substr(0, 5) == "type=") {
+  if (buf.starts_with("type=")) {
     std::string::size_type pos = buf.find_first_of(' ');
     type = buf.substr(5, pos - 5);
     // Strip quotes (so you can also specify the type without quotes)
@@ -634,7 +636,7 @@ LangAltValue::LangAltValue(const std::string& buf) : XmpValue(langAlt) {
 int LangAltValue::read(const std::string& buf) {
   std::string b = buf;
   std::string lang = "x-default";
-  if (buf.length() > 5 && buf.substr(0, 5) == "lang=") {
+  if (buf.starts_with("lang=")) {
     static constexpr auto ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
     const std::string::size_type pos = buf.find_first_of(' ');
@@ -649,7 +651,7 @@ int LangAltValue::read(const std::string& buf) {
     if (lang.front() == '"') {
       lang = lang.substr(1);
 
-      if (lang.empty() || lang.find('"') != lang.length() - 1)
+      if (lang.empty() || lang.back() != '"')
         throw Error(ErrorCode::kerInvalidLangAltValue, buf);
 
       lang.pop_back();
@@ -841,8 +843,7 @@ DateValue* DateValue::clone_() const {
 std::ostream& DateValue::write(std::ostream& os) const {
   // Write DateValue in ISO 8601 Extended format: YYYY-MM-DD
   std::ios::fmtflags f(os.flags());
-  os << std::setw(4) << std::setfill('0') << date_.year << '-' << std::right << std::setw(2) << std::setfill('0')
-     << date_.month << '-' << std::setw(2) << std::setfill('0') << date_.day;
+  os << stringFormat("{:04}-{:02}-{:02}", date_.year, date_.month, date_.day);
   os.flags(f);
   return os;
 }
@@ -1023,9 +1024,8 @@ std::ostream& TimeValue::write(std::ostream& os) const {
     plusMinus = '-';
 
   std::ios::fmtflags f(os.flags());
-  os << std::right << std::setw(2) << std::setfill('0') << time_.hour << ':' << std::setw(2) << std::setfill('0')
-     << time_.minute << ':' << std::setw(2) << std::setfill('0') << time_.second << plusMinus << std::setw(2)
-     << std::setfill('0') << abs(time_.tzHour) << ':' << std::setw(2) << std::setfill('0') << abs(time_.tzMinute);
+  os << stringFormat("{:02}:{:02}:{:02}{}{:02}:{:02}", time_.hour, time_.minute, time_.second, plusMinus,
+                     std::abs(time_.tzHour), std::abs(time_.tzMinute));
   os.flags(f);
 
   return os;

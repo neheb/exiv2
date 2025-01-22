@@ -46,13 +46,14 @@
 
 // + standard includes
 #include <array>
+#include <bit>
 #include <cstdio>
 #include <cstring>
 #include <limits>
 #include <set>
 
-#ifdef __cpp_lib_endian
-#include <bit>
+#ifdef _WIN32
+#include <windows.h>
 #endif
 
 // *****************************************************************************
@@ -174,35 +175,10 @@ bool Image::isPrintICC(uint16_t type, Exiv2::PrintStructureOption option) {
 }
 
 bool Image::isBigEndianPlatform() {
-#ifdef __cpp_lib_endian
   return std::endian::native == std::endian::big;
-#elif defined(__LITTLE_ENDIAN__)
-  return false;
-#elif defined(__BIG_ENDIAN__)
-  return true;
-#elif defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__)
-#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
-  return true;
-#else
-  return false;
-#endif
-#else
-  union {
-    uint32_t i;
-    char c[4];
-  } e = {0x01000000};
-
-  return e.c[0] != 0;
-#endif
 }
 bool Image::isLittleEndianPlatform() {
-#ifdef __cpp_lib_endian
   return std::endian::native == std::endian::little;
-#elif defined(__LITTLE_ENDIAN__)
-  return true;
-#else
-  return !isBigEndianPlatform();
-#endif
 }
 
 uint64_t Image::byteSwap(uint64_t value, bool bSwap) {
@@ -357,7 +333,7 @@ void Image::printIFDStructure(BasicIo& io, std::ostream& out, Exiv2::PrintStruct
 
     // Read the dictionary
     for (int i = 0; i < dirLength; i++) {
-      if (visits.find(io.tell()) != visits.end()) {  // #547
+      if (visits.contains(io.tell())) {  // #547
         throw Error(ErrorCode::kerCorruptedMetadata);
       }
       visits.insert(io.tell());
@@ -435,7 +411,7 @@ void Image::printIFDStructure(BasicIo& io, std::ostream& out, Exiv2::PrintStruct
         const std::string offsetString = bOffsetIsPointer ? stringFormat("{:9}", offset) : "";
 
         out << Internal::indent(depth)
-            << stringFormat("{:8} | {:#06x} {:<28} | {:>9} | {:>8} | {:9} | ", address, tag, tagName(tag).c_str(),
+            << stringFormat("{:8} | {:#06x} {:<28} | {:>9} | {:>8} | {:9} | ", address, tag, tagName(tag),
                             typeName(type), count, offsetString);
         if (isShortType(type)) {
           for (size_t k = 0; k < kount; k++) {
@@ -830,12 +806,34 @@ BasicIo::UniquePtr ImageFactory::createIo(const std::string& path, [[maybe_unuse
 #endif
 }  // ImageFactory::createIo
 
+#ifdef _WIN32
+BasicIo::UniquePtr ImageFactory::createIo(const std::wstring& path) {
+#ifdef EXV_ENABLE_FILESYSTEM
+  return std::make_unique<FileIo>(path);
+#else
+  return nullptr;
+#endif
+}
+#endif
+
 Image::UniquePtr ImageFactory::open(const std::string& path, bool useCurl) {
   auto image = open(ImageFactory::createIo(path, useCurl));  // may throw
   if (!image)
     throw Error(ErrorCode::kerFileContainsUnknownImageType, path);
   return image;
 }
+
+#ifdef _WIN32
+Image::UniquePtr ImageFactory::open(const std::wstring& path) {
+  auto image = open(ImageFactory::createIo(path));  // may throw
+  if (!image) {
+    char t[1024];
+    WideCharToMultiByte(CP_UTF8, 0, path.c_str(), -1, t, 1024, nullptr, nullptr);
+    throw Error(ErrorCode::kerFileContainsUnknownImageType, t);
+  }
+  return image;
+}
+#endif
 
 Image::UniquePtr ImageFactory::open(const byte* data, size_t size) {
   auto image = open(std::make_unique<MemIo>(data, size));  // may throw

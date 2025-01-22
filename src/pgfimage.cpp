@@ -10,6 +10,7 @@
 #include "futils.hpp"
 #include "image.hpp"
 
+#include <bit>
 #include <iostream>
 
 // Signature from front of PGF file

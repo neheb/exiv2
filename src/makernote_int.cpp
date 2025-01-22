@@ -16,17 +16,10 @@
 
 // + standard includes
 #include <array>
+#include <filesystem>
 #include <iostream>
 
-#ifdef EXV_ENABLE_FILESYSTEM
-#if __has_include(<filesystem>)
-#include <filesystem>
 namespace fs = std::filesystem;
-#else
-#include <experimental/filesystem>
-namespace fs = std::experimental::filesystem;
-#endif
-#endif
 
 #if !defined(_WIN32)
 #include <pwd.h>
@@ -134,10 +127,9 @@ const TiffMnRegistry TiffMnCreator::registry_[] = {
 };
 
 bool TiffMnRegistry::operator==(const std::string& key) const {
-  std::string make(make_);
   if (!key.empty() && key.front() == '-')
     return false;
-  return make == key.substr(0, make.length());
+  return key.starts_with(make_);
 }
 
 bool TiffMnRegistry::operator==(IfdId key) const {
@@ -985,7 +977,7 @@ int sony2FpSelector(uint16_t /*tag*/, const byte* /*pData*/, size_t /*size*/, Ti
   // Not valid for models beginning
   std::string model = getExifModel(pRoot);
   const std::array strs{"SLT-", "HV", "ILCA-"};
-  return std::any_of(strs.begin(), strs.end(), [&model](auto m) { return startsWith(model, m); }) ? -1 : 0;
+  return std::any_of(strs.begin(), strs.end(), [&model](auto m) { return model.starts_with(m); }) ? -1 : 0;
 }
 
 int sonyMisc2bSelector(uint16_t /*tag*/, const byte* /*pData*/, size_t /*size*/, TiffComponent* pRoot) {

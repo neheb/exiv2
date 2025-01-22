@@ -4,6 +4,7 @@
 #include "pentaxmn_int.hpp"
 #include "exif.hpp"
 #include "i18n.h"  // NLS support.
+#include "image_int.hpp"
 #include "makernote_int.hpp"
 #include "tags.hpp"
 #include "types.hpp"
@@ -915,21 +916,14 @@ std::ostream& PentaxMakerNote::printResolution(std::ostream& os, const Value& va
 
 std::ostream& PentaxMakerNote::printDate(std::ostream& os, const Value& value, const ExifData*) {
   /* I choose same format as is used inside EXIF itself */
-  os << ((static_cast<uint16_t>(value.toInt64(0)) << 8) + value.toInt64(1));
-  os << ":";
-  os << std::setw(2) << std::setfill('0') << value.toInt64(2);
-  os << ":";
-  os << std::setw(2) << std::setfill('0') << value.toInt64(3);
+  os << stringFormat("{}:{:02}:{:02}", ((static_cast<uint16_t>(value.toInt64(0)) << 8) + value.toInt64(1)),
+                     value.toInt64(2), value.toInt64(3));
   return os;
 }
 
 std::ostream& PentaxMakerNote::printTime(std::ostream& os, const Value& value, const ExifData*) {
   std::ios::fmtflags f(os.flags());
-  os << std::setw(2) << std::setfill('0') << value.toInt64(0);
-  os << ":";
-  os << std::setw(2) << std::setfill('0') << value.toInt64(1);
-  os << ":";
-  os << std::setw(2) << std::setfill('0') << value.toInt64(2);
+  os << stringFormat("{:02}:{:02}:{:02}", value.toInt64(0), value.toInt64(1), value.toInt64(2));
   os.flags(f);
   return os;
 }
@@ -1181,7 +1175,7 @@ static std::ostream& resolveLens0x8ff(std::ostream& os, const Value& value, cons
     const auto lensInfo = findLensInfo(metadata);
     if (value.count() == 4) {
       std::string model = getKeyString("Exif.Image.Model", metadata);
-      if (startsWith(model, "PENTAX K-3") && lensInfo->count() == 128 && lensInfo->toUint32(1) == 168 &&
+      if (model.starts_with("PENTAX K-3") && lensInfo->count() == 128 && lensInfo->toUint32(1) == 168 &&
           lensInfo->toUint32(2) == 144)
         index = 7;
     }
@@ -1208,15 +1202,15 @@ static std::ostream& resolveLens0x319(std::ostream& os, const Value& value, cons
     const auto lensInfo = findLensInfo(metadata);
     if (value.count() == 4) {
       std::string model = getKeyString("Exif.Image.Model", metadata);
-      if (startsWith(model, "PENTAX K-3") && lensInfo->count() == 128 && lensInfo->toUint32(1) == 131 &&
+      if (model.starts_with("PENTAX K-3") && lensInfo->count() == 128 && lensInfo->toUint32(1) == 131 &&
           lensInfo->toUint32(2) == 128)
         index = 6;
     }
     if (value.count() == 2) {
       std::string model = getKeyString("Exif.Image.Model", metadata);
-      if (startsWith(model, "PENTAX K100D") && lensInfo->count() == 44)
+      if (model.starts_with("PENTAX K100D") && lensInfo->count() == 44)
         index = 6;
-      if (startsWith(model, "PENTAX *ist DL") && lensInfo->count() == 36)
+      if (model.starts_with("PENTAX *ist DL") && lensInfo->count() == 36)
         index = 6;
     }
 

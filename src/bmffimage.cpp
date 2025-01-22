@@ -248,7 +248,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
   // never visit a box twice!
   if (depth == 0)
     visits_.clear();
-  if (visits_.find(address) != visits_.end() || visits_.size() > visits_max_ || depth >= max_box_depth_) {
+  if (visits_.contains(address) || visits_.size() > visits_max_ || depth >= max_box_depth_) {
     throw Error(ErrorCode::kerCorruptedMetadata);
   }
   visits_.insert(address);
@@ -363,7 +363,7 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
       // Check that the string has a '\0' terminator.
       const char* str = data.c_str(skip);
       const size_t maxlen = data.size() - skip;
-      Internal::enforce(maxlen > 0 && strnlen(str, maxlen) < maxlen, Exiv2::ErrorCode::kerCorruptedMetadata);
+      Internal::enforce(maxlen > 0 && std::strlen(str) < maxlen, Exiv2::ErrorCode::kerCorruptedMetadata);
       std::string name(str);
       if (Internal::contains(name, "Exif")) {  // "Exif" or "ExifExif"
         exifID_ = ID;
@@ -391,14 +391,14 @@ uint64_t BmffImage::boxHandler(std::ostream& out /* = std::cout*/, Exiv2::PrintS
       }
       // post-process meta box to recover Exif and XMP
       if (box_type == TAG_meta) {
-        if (ilocs_.find(exifID_) != ilocs_.end()) {
+        if (ilocs_.contains(exifID_)) {
           const Iloc& iloc = ilocs_.find(exifID_)->second;
           if (bTrace) {
             out << Internal::indent(depth) << "Exiv2::BMFF Exif: " << iloc.toString() << '\n';
           }
           parseTiff(Internal::Tag::root, iloc.length_, iloc.start_);
         }
-        if (ilocs_.find(xmpID_) != ilocs_.end()) {
+        if (ilocs_.contains(xmpID_)) {
           const Iloc& iloc = ilocs_.find(xmpID_)->second;
           if (bTrace) {
             out << Internal::indent(depth) << "Exiv2::BMFF XMP: " << iloc.toString() << '\n';

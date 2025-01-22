@@ -493,7 +493,7 @@ void XmpData::eraseFamily(XmpData::iterator& pos) {
   std::string key(pos->key());
   std::vector<std::string> keys;
   while (pos != xmpMetadata_.end()) {
-    if (!Exiv2::Internal::startsWith(pos->key(), key))
+    if (!pos->key().starts_with(key))
       break;
     keys.push_back(pos->key());
     pos++;
@@ -593,7 +593,7 @@ static XMP_Status nsDumper(void* refCon, XMP_StringPtr buffer, XMP_StringLen buf
     std::string b;
     if (bNS) {  // store the NS in dict[""]
       m[b] = out;
-    } else if (m.find(b) != m.end()) {  // store dict[uri] = dict[""]
+    } else if (m.contains(b)) {  // store dict[uri] = dict[""]
       m[m[b]] = out;
       m.erase(b);
     }

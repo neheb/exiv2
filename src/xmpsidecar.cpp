@@ -13,8 +13,8 @@
 #include <iostream>
 
 namespace {
-constexpr auto xmlHeader = "<?xpacket begin=\"\xef\xbb\xbf\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n";
-const auto xmlHdrCnt = static_cast<long>(std::strlen(xmlHeader));  // without the trailing 0-character
+constexpr char xmlHeader[] = "<?xpacket begin=\"\xef\xbb\xbf\" id=\"W5M0MpCehiHzreSzNTczkc9d\"?>\n";
+constexpr auto xmlHdrCnt = std::size(xmlHeader) - 1;  // without the trailing 0-character
 constexpr auto xmlFooter = "<?xpacket end=\"w\"?>";
 }  // namespace
 
@@ -128,7 +128,7 @@ void XmpSidecar::writeMetadata() {
     }
   }
   if (!xmpPacket_.empty()) {
-    if (xmpPacket_.substr(0, 5) != "<?xml") {
+    if (!xmpPacket_.starts_with("<?xml")) {
       xmpPacket_ = xmlHeader + xmpPacket_ + xmlFooter;
     }
     MemIo tempIo;
@@ -181,13 +181,13 @@ bool isXmpType(BasicIo& iIo, bool advance) {
   }
   bool rc = false;
   std::string head(reinterpret_cast<const char*>(buf + start), len - start);
-  if (head.substr(0, 5) == "<?xml") {
+  if (head.starts_with("<?xml")) {
     // Forward to the next tag
     auto it = std::find(head.begin() + 5, head.end(), '<');
     if (it != head.end())
       head = head.substr(std::distance(head.begin(), it));
   }
-  if (head.size() > 9 && (head.substr(0, 9) == "<?xpacket" || head.substr(0, 10) == "<x:xmpmeta")) {
+  if (head.starts_with("<?xpacket") || head.starts_with("<x:xmpmeta")) {
     rc = true;
   }
   if (!advance || !rc) {

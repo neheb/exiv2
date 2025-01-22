@@ -433,7 +433,7 @@ struct Slice : public Internal::MutableSliceBase<Internal::ContainerStorage, con
    * Constructs a new constant subSlice. Behaves otherwise exactly like
    * the non-const version.
    */
-  [[nodiscard]] Slice<const container> subSlice(size_t begin, size_t end) const {
+  Slice<const container> subSlice(size_t begin, size_t end) const {
     return this->to_const_base().template subSlice<Slice<const container>>(begin, end);
   }
 };

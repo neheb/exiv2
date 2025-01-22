@@ -210,7 +210,7 @@ std::ostream& operator<<(std::ostream& os, const Rational& r) {
 }
 
 template <typename T>
-std::istream& fromStreamToRational(std::istream& is, T& r) {
+static std::istream& fromStreamToRational(std::istream& is, T& r) {
   // http://dev.exiv2.org/boards/3/topics/1912?r=1915
   if (std::tolower(is.peek()) == 'f') {
     char F = 0;
@@ -477,7 +477,7 @@ void hexdump(std::ostream& os, const byte* buf, size_t len, size_t offset) {
 }
 
 bool isHex(const std::string& str, size_t size, const std::string& prefix) {
-  if (str.size() <= prefix.size() || str.substr(0, prefix.size()) != prefix)
+  if (!str.starts_with(prefix))
     return false;
   if (size > 0 && str.size() != size + prefix.size())
     return false;
