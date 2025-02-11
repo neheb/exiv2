@@ -162,9 +162,8 @@ class TiffComponent {
   constexpr TiffComponent(uint16_t tag, IfdId group) : tag_(tag), group_(group) {
   }
   //! Virtual destructor.
+  TiffComponent() = default;
   virtual ~TiffComponent() = default;
-  TiffComponent(const TiffComponent&) = default;
-  TiffComponent& operator=(const TiffComponent&) = default;
   //@}
 
   //! @name Manipulators

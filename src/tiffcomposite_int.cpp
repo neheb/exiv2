@@ -120,7 +120,6 @@ TiffBinaryArray::~TiffBinaryArray() {
 }
 
 TiffEntryBase::TiffEntryBase(const TiffEntryBase& rhs) :
-    TiffComponent(rhs),
     tiffType_(rhs.tiffType_),
     count_(rhs.count_),
     offset_(rhs.offset_),
