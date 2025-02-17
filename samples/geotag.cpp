@@ -33,6 +33,7 @@ namespace fs = std::filesystem;
 #define _MAX_PATH 1024
 #endif
 
+namespace {
 // prototypes
 class Options;
 int getFileType(const char* path, Options& options);
@@ -98,9 +99,9 @@ class Position;
 using TimeDict_t = std::map<time_t, Position>;
 using TimeDict_i = std::map<time_t, Position>::iterator;
 using strings_t = std::vector<std::string>;
-const char* gDeg = nullptr;  // string "°" or "deg"
-TimeDict_t gTimeDict;
-strings_t gFiles;
+static const char* gDeg = nullptr;  // string "°" or "deg"
+static TimeDict_t gTimeDict;
+static strings_t gFiles;
 
 // Position (from gpx file)
 class Position {
@@ -109,7 +110,9 @@ class Position {
   }
 
   Position() = default;
-  virtual ~Position() = default;
+  ~Position() = default;
+  Position(const Position&) = default;
+  Position& operator=(const Position&) = default;
 
   //  instance methods
   [[nodiscard]] bool good() const {
@@ -368,7 +371,7 @@ time_t parseTime(const char* arg, bool bAdjust) {
       result = mktime(&T);
     }
   } catch (...) {
-  };
+  }
   return result;
 }
 
@@ -394,7 +397,7 @@ int timeZoneAdjust() {
   struct tm local = *localtime(&now);
   offset = local.tm_gmtoff;
 
-#if EXIV2_DEBUG_MESSAGES
+#ifdef EXIV2_DEBUG_MESSAGES
   struct tm utc = *gmtime(&now);
   printf("utc  :  offset = %6d dst = %d time = %s", 0, utc.tm_isdst, asctime(&utc));
   printf("local:  offset = %6d dst = %d time = %s", offset, local.tm_isdst, asctime(&local));
@@ -534,7 +537,7 @@ bool readImage(const char* path, Options& /* options */) {
       bResult = !exifData.empty();
     }
   } catch (...) {
-  };
+  }
   return bResult;
 }
 
@@ -558,7 +561,7 @@ time_t readImageTime(const std::string& path, std::string* pS = nullptr) {
           *pS = exifData[dateString].toString();
       }
     } catch (...) {
-    };
+    }
   }
 
   return result;
@@ -676,7 +679,7 @@ int parseTZ(const char* adjust) {
   try {
     sscanf(adjust, "%d%c%d", &h, &c, &m);
   } catch (...) {
-  };
+  }
 
   return (3600 * h) + (60 * m);
 }
@@ -686,6 +689,7 @@ bool mySort(const std::string& a, const std::string& b) {
   time_t B = readImageTime(b);
   return (A < B);
 }
+}  // namespace
 
 int main(int argc, const char* argv[]) {
   Exiv2::XmpParser::initialize();
@@ -875,7 +879,7 @@ int main(int argc, const char* argv[]) {
             image->writeMetadata();
         }
       } catch (...) {
-      };
+      }
     }
   }
 
