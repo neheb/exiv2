@@ -4,6 +4,7 @@
 #define BASICIO_HPP_
 
 // *****************************************************************************
+#include "config.h"
 #include "exiv2lib_export.h"
 
 // included header files

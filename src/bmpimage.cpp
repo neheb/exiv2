@@ -5,7 +5,10 @@
   History:   05-Mar-2007, marco: created
  */
 
+#include "config.h"
+
 #include "bmpimage.hpp"
+
 #include "basicio.hpp"
 #include "error.hpp"
 #include "futils.hpp"
