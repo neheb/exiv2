@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "config.h"
+
 #include "crwimage_int.hpp"
+
 #include "canonmn_int.hpp"
 #include "enforce.hpp"
 #include "error.hpp"

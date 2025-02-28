@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "config.h"
+
 #include "tiffimage_int.hpp"
+
 #include "error.hpp"
 #include "i18n.h"  // NLS support.
 #include "makernote_int.hpp"
