@@ -10,7 +10,7 @@ cargs = ['-D_GNU_SOURCE']
 cpp = meson.get_compiler('cpp')
 if host_machine.system() == 'windows' and get_option('default_library') != 'static'
   cargs += '-DEXIV2API=__declspec(dllexport)'
-elif cpp.has_function_attribute('visibility')
+elif cpp.has_function_attribute('visibility:default')
   cargs += '-DEXIV2API=__attribute__((visibility("default")))'
 else
   cargs += '-DEXIV2API='
@@ -52,8 +52,11 @@ cdata.set('EXV_HAVE_LENSDATA', get_option('lensdata'))
 cdata.set('EXV_ENABLE_VIDEO', get_option('video'))
 
 deps = []
-deps += cpp.find_library('ws2_32', required: host_machine.system() == 'windows')
-deps += cpp.find_library('procstat', required: host_machine.system() == 'freebsd')
+foreach d, os : {'procstat': 'freebsd', 'socket': 'sunos', 'ws2_32': 'windows'}
+  if host_machine.system() == os
+    deps += cpp.find_library(d)
+  endif
+endforeach
 
 fmt_dep = []
 if not cpp.has_header_symbol('format', 'std::format')

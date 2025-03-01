@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "config.h"
+
 // included header files
 #include "types.hpp"
 
@@ -15,6 +17,9 @@
 #include <cstring>
 #include <iomanip>
 #include <numeric>
+
+#include <filesystem>
+namespace fs = std::filesystem;
 
 // *****************************************************************************
 namespace {
@@ -293,12 +298,16 @@ float getFloat(const byte* buf, ByteOrder byteOrder) {
   // This algorithm assumes that the internal representation of the float
   // type is the 4-byte IEEE 754 binary32 format, which is common but not
   // required by the C++ standard.
+#ifdef __cpp_lib_bit_cast
+  return std::bit_cast<float>(getULong(buf, byteOrder));
+#else
   union {
     uint32_t ul_;
     float f_;
   } u;
   u.ul_ = getULong(buf, byteOrder);
   return u.f_;
+#endif
 }
 
 double getDouble(const byte* buf, ByteOrder byteOrder) {
@@ -407,12 +416,16 @@ size_t f2Data(byte* buf, float f, ByteOrder byteOrder) {
   // This algorithm assumes that the internal representation of the float
   // type is the 4-byte IEEE 754 binary32 format, which is common but not
   // required by the C++ standard.
+#ifdef __cpp_lib_bit_cast
+  return ul2Data(buf, std::bit_cast<uint32_t>(f), byteOrder);
+#else
   union {
     uint32_t ul_;
     float f_;
   } u;
   u.f_ = f;
   return ul2Data(buf, u.ul_, byteOrder);
+#endif
 }
 
 size_t d2Data(byte* buf, double d, ByteOrder byteOrder) {
@@ -640,10 +653,10 @@ const char* _exvGettext(const char* str) {
   if (!exvGettextInitialized) {
     // bindtextdomain(EXV_PACKAGE_NAME, EXV_LOCALEDIR);
     auto localeDir = []() -> std::string {
-      if constexpr (EXV_LOCALEDIR[0] == '/')
-        return EXV_LOCALEDIR;
-      else
-        return Exiv2::getProcessPath() + EXV_SEPARATOR_STR + EXV_LOCALEDIR;
+      fs::path ret = EXV_LOCALEDIR;
+      if constexpr (EXV_LOCALEDIR[0] != '/')
+        ret = fs::path(Exiv2::getProcessPath()) / EXV_LOCALEDIR;
+      return ret.string();
     }();
     bindtextdomain(EXV_PACKAGE_NAME, localeDir.c_str());
 #ifdef EXV_HAVE_BIND_TEXTDOMAIN_CODESET

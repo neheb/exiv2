@@ -5,6 +5,7 @@
 
 // *****************************************************************************
 // included header files
+#include "config.h"
 #include "slice.hpp"  // for Slice
 
 #include <cstddef>  // for size_t

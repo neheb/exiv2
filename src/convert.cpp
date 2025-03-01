@@ -8,8 +8,9 @@
  */
 // *****************************************************************************
 // included header files
-#include "convert.hpp"
 #include "config.h"
+
+#include "convert.hpp"
 #include "error.hpp"
 #include "exif.hpp"
 #include "futils.hpp"
@@ -21,7 +22,6 @@
 // + standard includes
 #include <algorithm>
 #include <functional>
-#include <iomanip>
 
 #ifdef EXV_HAVE_ICONV
 #include <iconv.h>
