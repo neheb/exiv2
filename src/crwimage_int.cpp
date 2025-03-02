@@ -8,6 +8,7 @@
 #include "image_int.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <ctime>
 #include <iostream>
 
@@ -729,23 +730,26 @@ void CrwMap::decode0x180e(const CiffComponent& ciffComponent, const CrwMapping* 
   }
   ULongValue v;
   v.read(ciffComponent.pData(), 8, byteOrder);
+#ifdef EXV_HAVE_CHRONO_TZ
+  auto t = std::chrono::system_clock::from_time_t(v.value_.at(0));
+  auto local_time = std::chrono::current_zone()->to_local(t);
+  auto s = stringFormat("{:%Y:%m:%d %T}", local_time);
+#else
   time_t t = v.value_.at(0);
   tm r;
-#ifdef _WIN32
-  auto tm = localtime_s(&r, &t) ? nullptr : &r;
-#else
   auto tm = localtime_r(&t, &r);
-#endif
-  if (tm) {
-    const size_t m = 20;
-    char s[m];
-    std::strftime(s, m, "%Y:%m:%d %H:%M:%S", tm);
+  if (!tm)
+    return;
 
-    ExifKey key(pCrwMapping->tag_, Internal::groupName(pCrwMapping->ifdId_));
-    AsciiValue value;
-    value.read(std::string(s));
-    image.exifData().add(key, &value);
-  }
+  const size_t m = 20;
+  char s[m];
+  std::strftime(s, m, "%Y:%m:%d %H:%M:%S", tm);
+#endif
+
+  ExifKey key(pCrwMapping->tag_, Internal::groupName(pCrwMapping->ifdId_));
+  AsciiValue value;
+  value.read(std::string(s));
+  image.exifData().add(key, &value);
 }  // CrwMap::decode0x180e
 
 void CrwMap::decode0x1810(const CiffComponent& ciffComponent, const CrwMapping* pCrwMapping, Image& image,

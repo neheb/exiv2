@@ -46,6 +46,7 @@ cdata.set('EXV_PACKAGE_STRING', '@0@ @1@'.format(meson.project_name(), cdata.get
 cdata.set('EXV_HAVE_STRERROR_R', cpp.has_function('strerror_r'))
 cdata.set('EXV_STRERROR_R_CHAR_P', not cpp.compiles('#define _GNU_SOURCE\n#include <string.h>\nint strerror_r(int,char*,size_t);int main(){}'))
 cdata.set('EXV_HAVE_STD_FORMAT', cpp.has_header_symbol('format', 'std::format'))
+cdata.set('EXV_HAVE_CHRONO_TZ', cpp.has_header_symbol('chrono', 'std::chrono::time_zone'))
 
 cdata.set('EXV_ENABLE_BMFF', get_option('bmff'))
 cdata.set('EXV_HAVE_LENSDATA', get_option('lensdata'))
@@ -56,7 +57,7 @@ deps += cpp.find_library('ws2_32', required: host_machine.system() == 'windows')
 deps += cpp.find_library('procstat', required: host_machine.system() == 'freebsd')
 
 fmt_dep = []
-if not cpp.has_header_symbol('format', 'std::format')
+if not cdata.get('EXV_HAVE_STD_FORMAT', false)
   fmt_dep = dependency('fmt')
   deps += fmt_dep
 endif

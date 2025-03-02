@@ -27,6 +27,9 @@
 // Define if you have the std::format function.
 #cmakedefine EXV_HAVE_STD_FORMAT
 
+// Define if you have the std::chrono::time_zone class.
+#cmakedefine EXV_HAVE_CHRONO_TZ
+
 // Define if you have the strerror_r function.
 #cmakedefine EXV_HAVE_STRERROR_R
 

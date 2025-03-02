@@ -8,21 +8,16 @@
 #include <sys/types.h>
 
 #include <algorithm>
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 
 namespace fs = std::filesystem;
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #include <windows.h>
-#if _MSC_VER < 1400
-#define strcpy_s(d, l, s) strcpy(d, s)
-#define strcat_s(d, l, s) strcat(d, s)
-#endif
-#endif
-
-#if !defined(_MSC_VER)
+#else
 #include <dirent.h>
 #include <sys/param.h>
 #include <unistd.h>
@@ -377,34 +372,23 @@ time_t parseTime(const char* arg, bool bAdjust) {
 
 // West of GMT is negative (PDT = Pacific Daylight = -07:00 == -25200 seconds
 int timeZoneAdjust() {
-  [[maybe_unused]] time_t now = time(nullptr);
-  int offset;
-
-#if defined(_WIN32)
-  TIME_ZONE_INFORMATION TimeZoneInfo;
-  GetTimeZoneInformation(&TimeZoneInfo);
-  offset = -(TimeZoneInfo.Bias + TimeZoneInfo.DaylightBias * 60);
-#elif defined(__CYGWIN__)
-  struct tm lcopy = *localtime(&now);
-  time_t gmt = timegm(&lcopy);  // timegm modifies lcopy
-  offset = (int)(((long signed int)gmt) - ((long signed int)now));
-#elif defined(OS_SOLARIS) || defined(__sun__)
-  struct tm local = *localtime(&now);
-  time_t local_tt = mktime(&local);
-  time_t time_gmt = mktime(gmtime(&now));
-  offset = time_gmt - local_tt;
+#if __cpp_lib_chrono >= 201907L
+  auto tz = std::chrono::current_zone();
+  auto info = tz->get_info(std::chrono::system_clock::now());
+  return static_cast<int>(info.offset.count());
 #else
-  struct tm local = *localtime(&now);
-  offset = local.tm_gmtoff;
+  time_t now = time(nullptr);
+  auto local = localtime(&now);
+  int offset = local->tm_gmtoff;
 
 #ifdef EXIV2_DEBUG_MESSAGES
-  struct tm utc = *gmtime(&now);
-  printf("utc  :  offset = %6d dst = %d time = %s", 0, utc.tm_isdst, asctime(&utc));
-  printf("local:  offset = %6d dst = %d time = %s", offset, local.tm_isdst, asctime(&local));
+  auto utc = gmtime(&now);
+  printf("utc  :  offset = %6d dst = %d time = %s", 0, utc->tm_isdst, asctime(utc));
+  printf("local:  offset = %6d dst = %d time = %s", offset, local->tm_isdst, asctime(local));
   printf("timeZoneAdjust = %6d\n", offset);
 #endif
-#endif
   return offset;
+#endif
 }
 
 std::string getExifTime(const time_t t) {
