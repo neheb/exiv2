@@ -1642,9 +1642,6 @@ int str2Tm(const std::string& timeStr, tm* tm) {
 }  // str2Tm
 
 std::string time2Str(time_t time) {
-#ifndef EXV_HAVE_STD_FORMAT
-  return fmt::format("{:%Y:%m:%d %T}", fmt::localtime(&time));
-#else
   std::tm r;
 #ifdef _WIN32
   auto tm = localtime_s(&r, &time) ? nullptr : &r;
@@ -1658,7 +1655,6 @@ std::string time2Str(time_t time) {
   char s[m];
   std::strftime(s, m, "%Y:%m:%d %T", tm);
   return s;
-#endif
 }  // time2Str
 
 std::string temporaryPath() {
