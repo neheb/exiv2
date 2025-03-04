@@ -19,8 +19,6 @@ endif
 if host_machine.system() == 'windows'
   if cpp.get_argument_syntax() == 'msvc'
     add_project_arguments('-DNOMINMAX', language: 'cpp')
-  elif cpp.compiles('#include <time.h>\n#ifdef _UCRT\n#error\n#endif')
-    error('Non UCRT MinGW is unsupported. Please update toolchain')
   endif
 endif
 
