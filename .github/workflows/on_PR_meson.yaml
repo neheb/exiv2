@@ -142,6 +142,8 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - run: git config --global core.autocrlf input
+        shell: cmd
       - uses: actions/checkout@v4
 
       - uses: msys2/setup-msys2@v2
@@ -152,7 +154,6 @@ jobs:
             cmake:p
             curl:p
             gtest:p
-            libinih:p
             meson:p
             ninja:p
             pkgconf:p
