@@ -10,7 +10,7 @@ cargs = ['-D_GNU_SOURCE']
 cpp = meson.get_compiler('cpp')
 if host_machine.system() == 'windows' and get_option('default_library') != 'static'
   cargs += '-DEXIV2API=__declspec(dllexport)'
-elif cpp.has_function_attribute('visibility')
+elif cpp.has_function_attribute('visibility:default')
   cargs += '-DEXIV2API=__attribute__((visibility("default")))'
 else
   cargs += '-DEXIV2API='
@@ -19,8 +19,6 @@ endif
 if host_machine.system() == 'windows'
   if cpp.get_argument_syntax() == 'msvc'
     add_project_arguments('-DNOMINMAX', language: 'cpp')
-  elif cpp.compiles('#include <time.h>\n#ifdef _UCRT\n#error\n#endif')
-    error('Non UCRT MinGW is unsupported. Please update toolchain')
   endif
 endif
 
@@ -52,8 +50,11 @@ cdata.set('EXV_HAVE_LENSDATA', get_option('lensdata'))
 cdata.set('EXV_ENABLE_VIDEO', get_option('video'))
 
 deps = []
-deps += cpp.find_library('ws2_32', required: host_machine.system() == 'windows')
-deps += cpp.find_library('procstat', required: host_machine.system() == 'freebsd')
+foreach d, os : {'procstat': 'freebsd', 'socket': 'sunos', 'ws2_32': 'windows'}
+  if host_machine.system() == os
+    deps += cpp.find_library(d)
+  endif
+endforeach
 
 fmt_dep = []
 if not cpp.has_header_symbol('format', 'std::format')
@@ -157,6 +158,9 @@ executable(
   install: true,
 )
 
+subdir('unitTests')
+subdir('po')
+
 samples = {
   'addmoddel': [],
   'conntest': web_dep,
@@ -173,6 +177,7 @@ samples = {
   'iptceasy': [],
   'iptcprint': [],
   'iptctest': [],
+  'jpegparsetest': [],
   'key-test': [],
   'largeiptc-test': [],
   'mmap-test': [],
@@ -206,5 +211,5 @@ foreach g : gopt
   executable(g, 'samples/@0@.cpp'.format(g), 'app/getopt.cpp', dependencies: exiv2_dep, include_directories: [exiv2inc, ginc])
 endforeach
 
-subdir('unitTests')
-subdir('po')
+bindir = 'EXIV2_BINDIR=@0@'.format(meson.current_build_dir())
+subdir('tests')
