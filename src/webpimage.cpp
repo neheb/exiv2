@@ -19,7 +19,6 @@
 
 #include <array>
 #include <iostream>
-#include <utility>
 
 namespace {
 [[maybe_unused]] std::string binaryToHex(const uint8_t* data, size_t size) {
@@ -40,7 +39,7 @@ namespace {
       int max = 15;
       if (loop >= tl) {
         max = static_cast<int>(tl_offset) - 1;
-        for (int offset = 0; std::cmp_less(offset, 16 - tl_offset); offset++) {
+        for (int offset = 0; offset < static_cast<int>(16 - tl_offset); offset++) {
           if ((offset % 8) == 7) {
             hexOutput << "  ";
           }

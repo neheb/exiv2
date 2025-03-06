@@ -18,7 +18,6 @@
 #include <ctime>    // timestamp for the name of temporary file
 #include <fstream>  // write the temporary file
 #include <iostream>
-#include <utility>
 
 #if __has_include(<sys/mman.h>)
 #include <sys/mman.h>  // for mmap and munmap
@@ -808,7 +807,7 @@ int MemIo::seek(int64_t offset, Position pos) {
   if (newIdx < 0)
     return 1;
 
-  if (std::cmp_greater(newIdx, p_->size_)) {
+  if (newIdx > static_cast<int64_t>(p_->size_)) {
     p_->eof_ = true;
     return 1;
   }
@@ -1299,7 +1298,7 @@ int RemoteIo::seek(int64_t offset, Position pos) {
   // #1198.  Don't return 1 when asked to seek past EOF.  Stay calm and set eof_
   // if (newIdx < 0 || newIdx > (long) p_->size_) return 1;
   p_->idx_ = static_cast<size_t>(newIdx);
-  p_->eof_ = std::cmp_greater(newIdx, p_->size_);
+  p_->eof_ = newIdx > static_cast<int64_t>(p_->size_);
   p_->idx_ = std::min(p_->idx_, p_->size_);
   return 0;
 }

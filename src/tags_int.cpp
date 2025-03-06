@@ -3014,7 +3014,7 @@ std::ostream& print0x9202(std::ostream& os, const Value& value, const ExifData*)
 std::ostream& print0x9204(std::ostream& os, const Value& value, const ExifData*) {
   Rational bias = value.toRational();
 
-  if (bias.first == 0 || bias.first == std::numeric_limits<int32_t>::min()) {
+  if (bias.first == 0 || bias.first == static_cast<int32_t>(0x80000000)) {
     os << "0 EV";
   } else if (bias.second <= 0) {
     os << "(" << bias.first << "/" << bias.second << ")";

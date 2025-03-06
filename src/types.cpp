@@ -16,7 +16,6 @@
 #include <cstring>
 #include <iomanip>
 #include <numeric>
-#include <utility>
 
 #include <filesystem>
 namespace fs = std::filesystem;
@@ -569,7 +568,7 @@ int64_t parseInt64(const std::string& s, bool& ok) {
 }
 
 uint32_t parseUint32(const std::string& s, bool& ok) {
-  if (auto x = parseInt64(s, ok); ok && 0 <= x && std::cmp_less_equal(x, std::numeric_limits<uint32_t>::max())) {
+  if (auto x = parseInt64(s, ok); ok && 0 <= x && x <= std::numeric_limits<uint32_t>::max()) {
     return static_cast<uint32_t>(x);
   }
   ok = false;

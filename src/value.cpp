@@ -12,7 +12,6 @@
 
 // + standard includes
 #include <sstream>
-#include <utility>
 
 // *****************************************************************************
 // class member definitions
@@ -856,7 +855,7 @@ int64_t DateValue::toInt64(size_t /*n*/) const {
 
 uint32_t DateValue::toUint32(size_t /*n*/) const {
   const int64_t t = toInt64();
-  if (t < 0 || std::cmp_greater(t, std::numeric_limits<uint32_t>::max())) {
+  if (t < 0 || t > std::numeric_limits<uint32_t>::max()) {
     ok_ = false;
     return 0;
   }

@@ -16,7 +16,6 @@
 
 #include <functional>
 #include <iostream>
-#include <utility>
 
 // *****************************************************************************
 namespace {
@@ -1297,7 +1296,7 @@ void TiffReader::readTiffEntry(TiffEntryBase* object) {
       pData = const_cast<byte*>(pData_) + baseOffset() + offset;
 
       // check for size being invalid
-      if (std::cmp_greater(size, pLast_ - pData)) {
+      if (size > static_cast<size_t>(pLast_ - pData)) {
 #ifndef SUPPRESS_WARNINGS
         EXV_ERROR << "Upper boundary of data for " << "directory " << groupName(object->group()) << ", entry 0x"
                   << std::setw(4) << std::setfill('0') << std::hex << object->tag()

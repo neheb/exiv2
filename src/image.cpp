@@ -332,7 +332,7 @@ void Image::printIFDStructure(BasicIo& io, std::ostream& out, Exiv2::PrintStruct
     }
 
     // Read the dictionary
-    for (size_t i = 0; i < dirLength; i++) {
+    for (int i = 0; i < dirLength; i++) {
       if (visits.contains(io.tell())) {  // #547
         throw Error(ErrorCode::kerCorruptedMetadata);
       }

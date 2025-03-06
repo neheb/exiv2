@@ -13,7 +13,6 @@
 // + standard includes
 #include <algorithm>
 #include <iostream>
-#include <utility>
 
 // *****************************************************************************
 namespace {
@@ -399,7 +398,7 @@ int IptcParser::decode(IptcData& iptcData, const byte* pData, size_t size) {
       sizeData = getUShort(pRead, bigEndian);
       pRead += 2;
     }
-    if (std::cmp_less_equal(sizeData, pEnd - pRead)) {
+    if (sizeData <= static_cast<size_t>(pEnd - pRead)) {
       int rc = readData(iptcData, dataSet, record, pRead, sizeData);
       if (rc != 0) {
 #ifndef SUPPRESS_WARNINGS
