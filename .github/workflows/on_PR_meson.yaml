@@ -202,6 +202,22 @@ jobs:
           meson setup "${{github.workspace}}/build" -Dauto_features=${{matrix.deps}} -Dwarning_level=3 -Dnls=disabled -Db_lundef=false -Db_sanitize=address,undefined
           meson compile -C "${{github.workspace}}/build" --verbose
           meson test -C "${{github.workspace}}/build" --verbose
+  DragonflyBSD:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/dragonflybsd-vm@v1
+        env:
+          CC: gcc-13
+          CXX: g++-13
+        with:
+          envs: 'CC CXX'
+          prepare: |
+            pkg install -y cmake curl ninja meson gettext gcc13 python pkgconf googletest expat inih brotli
+          run: |
+            meson setup "${{github.workspace}}/build" -Dwarning_level=3
+            meson compile -C "${{github.workspace}}/build" --verbose
+            meson test -C "${{github.workspace}}/build" --verbose
   FreeBSD:
     runs-on: ubuntu-latest
     steps:
