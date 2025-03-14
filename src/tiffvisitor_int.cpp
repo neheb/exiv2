@@ -362,11 +362,7 @@ void TiffDecoder::decodeCanonAFInfo(const TiffEntryBase* object) {
   const uint16_t nMasks = (nPoints + 15) / (sizeof(uint16_t) * 8);
   int nStart = 0;
 
-  const struct record {
-    uint16_t tag;
-    uint16_t size;
-    bool bSigned;
-  } records[] = {
+  const std::tuple<uint16_t, uint16_t, bool> records[] = {
       {0x2600, 1, true},        // AFInfoSize
       {0x2601, 1, true},        // AFAreaMode
       {0x2602, 1, true},        // AFNumPoints
@@ -774,7 +770,7 @@ void TiffEncoder::encodeDataEntry(TiffDataEntry* object, const Exifdatum* datum)
 #endif
       DataBuf buf = object->pValue()->dataArea();
       if (!buf.empty()) {
-        std::copy_n(buf.c_data(), buf.size(), object->pDataArea_);
+        std::copy(buf.begin(), buf.end(), object->pDataArea_);
         if (object->sizeDataArea_ > buf.size()) {
           memset(object->pDataArea_ + buf.size(), 0x0, object->sizeDataArea_ - buf.size());
         }

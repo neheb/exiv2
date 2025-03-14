@@ -13,17 +13,6 @@
 #include "photoshop.hpp"
 #include "safe_op.hpp"
 #include "tags_int.hpp"
-#include "utils.hpp"
-
-#ifdef _WIN32
-#include <windows.h>
-#else
-using BYTE = char;
-using USHORT = uint16_t;
-using ULONG = uint32_t;
-#endif
-
-#include "fff.h"
 
 #include <array>
 #include <iostream>
@@ -84,9 +73,14 @@ constexpr Internal::TagDetails jpegProcessMarkerTags[] = {
     {sof15_, N_("Lossless, differential arithmetic coding")},
 };
 
-constexpr auto exifId_ = "Exif\0\0";  //!< Exif identifier
+constexpr std::array<std::uint8_t, 6> exifId_{
+    0x45, 0x78, 0x69, 0x66, 0x00, 0x00,
+};  //!< Exif identifier
+constexpr std::array<byte, 29> xmpId_{
+    0x68, 0x74, 0x74, 0x70, 0x3A, 0x2F, 0x2F, 0x6E, 0x73, 0x2E, 0x61, 0x64, 0x6F, 0x62, 0x65,
+    0x2E, 0x63, 0x6F, 0x6D, 0x2F, 0x78, 0x61, 0x70, 0x2F, 0x31, 0x2E, 0x30, 0x2F, 0x00,
+};  //!< XMP packet identifier
 // constexpr auto jfifId_ = "JFIF\0";                         //!< JFIF identifier
-constexpr auto xmpId_ = "http://ns.adobe.com/xap/1.0/\0";  //!< XMP packet identifier
 constexpr auto iccId_ = "ICC_PROFILE\0";                   //!< ICC profile identifier
 
 constexpr bool inRange(int lo, int value, int hi) {
@@ -194,7 +188,7 @@ void JpegBase::readMetadata() {
     }
 
     if (!foundExifData && marker == app1_ && size >= 8  // prevent out-of-bounds read in memcmp on next line
-        && buf.cmpBytes(2, exifId_, 6) == 0) {
+        && buf.cmpBytes(2, exifId_.data(), 6) == 0) {
       ByteOrder bo = ExifParser::decode(exifData_, buf.c_data(8), size - 8);
       setByteOrder(bo);
       if (size > 8 && byteOrder() == invalidByteOrder) {
@@ -206,7 +200,7 @@ void JpegBase::readMetadata() {
       --search;
       foundExifData = true;
     } else if (!foundXmpData && marker == app1_ && size >= 31  // prevent out-of-bounds read in memcmp on next line
-               && buf.cmpBytes(2, xmpId_, 29) == 0) {
+               && buf.cmpBytes(2, xmpId_.data(), 29) == 0) {
       xmpPacket_.assign(buf.c_str(31), size - 31);
       if (!xmpPacket_.empty() && XmpParser::decode(xmpData_, xmpPacket_)) {
 #ifndef SUPPRESS_WARNINGS
@@ -271,7 +265,7 @@ void JpegBase::readMetadata() {
       if (!iccProfile_.empty()) {
         std::copy(iccProfile_.begin(), iccProfile_.end(), profile.begin());
       }
-      std::copy_n(buf.c_data(2 + 14), icc_size, profile.data() + iccProfile_.size());
+      std::copy_n(buf.begin() + 2 + 14, icc_size, profile.begin() + iccProfile_.size());
       setIccProfile(std::move(profile), chunk == chunks);
     } else if (pixelHeight_ == 0 && inRange2(marker, sof0_, sof3_, sof5_, sof15_)) {
       // We hit a SOFn (start-of-frame) marker
@@ -657,16 +651,16 @@ void JpegBase::doWriteMetadata(BasicIo& outIo) {
       insertPos = count + 1;
     } else if (skipApp1Exif == notfound && marker == app1_ &&
                buf.size() >= 8 &&  // prevent out-of-bounds read in memcmp on next line
-               buf.cmpBytes(2, exifId_, 6) == 0) {
+               buf.cmpBytes(2, exifId_.data(), 6) == 0) {
       skipApp1Exif = count;
       ++search;
       if (buf.size() > 8) {
         rawExif.alloc(buf.size() - 8);
-        std::copy_n(buf.c_data(8), rawExif.size(), rawExif.begin());
+        std::copy_n(buf.begin() + 8, rawExif.size(), rawExif.begin());
       }
     } else if (skipApp1Xmp == notfound && marker == app1_ &&
                buf.size() >= 31 &&  // prevent out-of-bounds read in memcmp on next line
-               buf.cmpBytes(2, xmpId_, 29) == 0) {
+               buf.cmpBytes(2, xmpId_.data(), 29) == 0) {
       skipApp1Xmp = count;
       ++search;
     } else if (marker == app2_ && buf.size() >= 13 &&  // prevent out-of-bounds read in memcmp on next line
@@ -767,7 +761,7 @@ void JpegBase::doWriteMetadata(BasicIo& outIo) {
           if (exifSize > 0xffff - 8)
             throw Error(ErrorCode::kerTooLargeJpegSegment, "Exif");
           us2Data(tmpBuf.data() + 2, static_cast<uint16_t>(exifSize + 8), bigEndian);
-          std::copy_n(exifId_, 6, tmpBuf.data() + 4);
+          std::copy(exifId_.begin(), exifId_.end(), tmpBuf.begin() + 4);
           if (outIo.write(tmpBuf.data(), 10) != 10)
             throw Error(ErrorCode::kerImageWriteFailed);
 
@@ -794,7 +788,7 @@ void JpegBase::doWriteMetadata(BasicIo& outIo) {
         if (xmpPacket_.size() > 0xffff - 31)
           throw Error(ErrorCode::kerTooLargeJpegSegment, "XMP");
         us2Data(tmpBuf.data() + 2, static_cast<uint16_t>(xmpPacket_.size() + 31), bigEndian);
-        std::copy_n(xmpId_, 29, tmpBuf.data() + 4);
+        std::copy(xmpId_.begin(), xmpId_.end(), tmpBuf.begin() + 4);
         if (outIo.write(tmpBuf.data(), 33) != 33)
           throw Error(ErrorCode::kerImageWriteFailed);
 
@@ -870,7 +864,7 @@ void JpegBase::doWriteMetadata(BasicIo& outIo) {
           tmpBuf[0] = 0xff;
           tmpBuf[1] = app13_;
           us2Data(tmpBuf.data() + 2, static_cast<uint16_t>(chunkSize + 16), bigEndian);
-          std::copy_n(Photoshop::ps3Id_, 14, tmpBuf.data() + 4);
+          std::copy_n(Photoshop::ps3Id_, 14, tmpBuf.begin() + 4);
           if (outIo.write(tmpBuf.data(), 18) != 18)
             throw Error(ErrorCode::kerImageWriteFailed);
           if (outIo.error())
@@ -1031,11 +1025,9 @@ std::string ExvImage::mimeType() const {
 
 int ExvImage::writeHeader(BasicIo& outIo) const {
   // Exv header
-  byte tmpBuf[7];
-  tmpBuf[0] = 0xff;
-  tmpBuf[1] = 0x01;
-  std::copy_n(exiv2Id_, 5, tmpBuf + 2);
-  if (outIo.write(tmpBuf, 7) != 7)
+  auto tmpBuf = std::array<byte, 7>{0xff, 0x01};
+  std::copy_n(exiv2Id_, 5, tmpBuf.begin() + 2);
+  if (outIo.write(tmpBuf.data(), 7) != 7)
     return 4;
   if (outIo.error())
     return 4;

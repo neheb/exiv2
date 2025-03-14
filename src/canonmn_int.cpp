@@ -20,7 +20,6 @@
 
 // + standard includes
 #include <cmath>
-#include <iomanip>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -2799,7 +2798,7 @@ std::ostream& CanonMakerNote::printFocalLength(std::ostream& os, const Value& va
   auto pos = metadata->findKey(key);
   if (pos != metadata->end() && pos->value().count() >= 3 && pos->value().typeId() == unsignedShort) {
     float fu = pos->value().toFloat(2);
-    if (fu != 0.0F) {
+    if (std::isgreater(fu, 0.0F)) {
       return os << stringFormat("{:.1f} mm", value.toFloat(1) / fu);
     }
   }
@@ -3008,14 +3007,15 @@ std::ostream& CanonMakerNote::printCsLens(std::ostream& os, const Value& value, 
   }
 
   float fu = value.toFloat(2);
-  if (fu == 0.0F)
-    return os << value;
-  float len1 = value.toInt64(0) / fu;
-  float len2 = value.toInt64(1) / fu;
-  if (len1 == len2) {
-    return os << stringFormat("{:.1f} mm", len1);
+  if (std::isgreater(fu, 0.0F)) {
+    float len1 = value.toInt64(0) / fu;
+    float len2 = value.toInt64(1) / fu;
+    if (len1 == len2) {
+      return os << stringFormat("{:.1f} mm", len1);
+    }
+    return os << stringFormat("{:.1f} - {:.1f} mm", len2, len1);
   }
-  return os << stringFormat("{:.1f} - {:.1f} mm", len2, len1);
+  return os << value;
 }
 
 std::ostream& CanonMakerNote::printLe0x0000(std::ostream& os, const Value& value, const ExifData*) {
@@ -3029,7 +3029,7 @@ std::ostream& CanonMakerNote::printLe0x0000(std::ostream& os, const Value& value
 
 std::ostream& CanonMakerNote::printSi0x0001(std::ostream& os, const Value& value, const ExifData*) {
   if (value.typeId() == unsignedShort && value.count() > 0) {
-    os << std::pow(2.0F, canonEv(value.toInt64()) / 32) * 100.0F;
+    os << std::exp2(canonEv(value.toInt64()) / 32) * 100.0F;
   }
   return os;
 }
@@ -3037,7 +3037,7 @@ std::ostream& CanonMakerNote::printSi0x0001(std::ostream& os, const Value& value
 std::ostream& CanonMakerNote::printSi0x0002(std::ostream& os, const Value& value, const ExifData*) {
   if (value.typeId() == unsignedShort && value.count() > 0) {
     // Ported from Exiftool by Will Stokes
-    os << std::pow(2.0F, canonEv(value.toInt64())) * 100.0F / 32.0F;
+    os << std::exp2(canonEv(value.toInt64())) * (100.0F / 32.0F);
   }
   return os;
 }

@@ -56,14 +56,13 @@ void XmpSidecar::readMetadata() {
   std::string xmpPacket;
   const long len = 64 * 1024;
   byte buf[len];
-  size_t l;
-  while ((l = io_->read(buf, len)) > 0) {
+  while (auto l = io_->read(buf, len)) {
     xmpPacket.append(reinterpret_cast<char*>(buf), l);
   }
   if (io_->error())
     throw Error(ErrorCode::kerFailedToReadImageData);
   clearMetadata();
-  xmpPacket_ = xmpPacket;
+  xmpPacket_ = std::move(xmpPacket);
   if (!xmpPacket_.empty() && XmpParser::decode(xmpData_, xmpPacket_)) {
 #ifndef SUPPRESS_WARNINGS
     EXV_WARNING << "Failed to decode XMP metadata.\n";
@@ -74,8 +73,7 @@ void XmpSidecar::readMetadata() {
   for (const auto& xmp : xmpData_) {
     std::string key(xmp.key());
     if (Internal::contains(key, "Date")) {
-      std::string value(xmp.value().toString());
-      dates_[key] = value;
+      dates_[key] = xmp.value().toString();
     }
   }
 

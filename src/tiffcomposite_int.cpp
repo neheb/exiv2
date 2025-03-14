@@ -12,12 +12,13 @@
 #include "tiffimage_int.hpp"
 #include "tiffvisitor_int.hpp"
 #include "types.hpp"
-#include "utils.hpp"
 #include "value.hpp"
 
 #include <algorithm>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <numeric>
 
 // *****************************************************************************
 namespace {
@@ -380,7 +381,7 @@ bool TiffBinaryArray::updOrigDataBuf(const byte* pData, size_t size) {
     return false;
   if (origData_ == pData)
     return true;
-  std::copy_n(pData, origSize_, origData_);
+  std::memcpy(origData_, pData, origSize_);
   return true;
 }
 
@@ -469,20 +470,18 @@ TiffComponent* TiffSubIfd::doAddPath(uint16_t tag, TiffPath& tiffPath, TiffCompo
   }
   const TiffPathItem tpi2 = tiffPath.top();
   tiffPath.push(tpi1);
-  auto it = std::find_if(ifds_.begin(), ifds_.end(), [&](auto&& ifd) { return ifd->group() == tpi2.group(); });
-  if (it == ifds_.end()) {
-    auto tc = [&] {
-      if (tiffPath.size() == 1 && object) {
-        TiffComponent::UniquePtr tempObject;
-        std::swap(object, tempObject);
-        return addChild(std::move(tempObject));
-      }
-      return addChild(std::make_unique<TiffDirectory>(tpi1.tag(), tpi2.group()));
-    }();
-    setCount(ifds_.size());
-    return tc->addPath(tag, tiffPath, pRoot, std::move(object));
-  }
-  return (*it)->addPath(tag, tiffPath, pRoot, std::move(object));
+  for (const auto& ifd : ifds_)
+    if (ifd->group() == tpi2.group())
+      return ifd->addPath(tag, tiffPath, pRoot, std::move(object));
+
+  auto tc = [&] {
+    if (tiffPath.size() == 1 && object) {
+      return addChild(std::move(object));
+    }
+    return addChild(std::make_unique<TiffDirectory>(tpi1.tag(), tpi2.group()));
+  }();
+  setCount(ifds_.size());
+  return tc->addPath(tag, tiffPath, pRoot, nullptr);
 }  // TiffSubIfd::doAddPath
 
 TiffComponent* TiffMnEntry::doAddPath(uint16_t tag, TiffPath& tiffPath, TiffComponent* pRoot,
@@ -518,29 +517,24 @@ TiffComponent* TiffBinaryArray::doAddPath(uint16_t tag, TiffPath& tiffPath, Tiff
   const TiffPathItem tpi = tiffPath.top();
   // Initialize the binary array (if it is a complex array)
   initialize(tpi.group());
-  auto it = elements_.end();
   // Todo: Duplicates are not allowed!
   // To allow duplicate entries, we only check if the new component already
   // exists if there is still at least one composite tag on the stack
   if (tiffPath.size() > 1) {
-    it = std::find_if(elements_.begin(), it,
-                      [&](auto&& element) { return element->tag() == tpi.tag() && element->group() == tpi.group(); });
+    for (const auto& element : elements_)
+      if (element->tag() == tpi.tag() && element->group() == tpi.group())
+        return element->addPath(tag, tiffPath, pRoot, std::move(object));
   }
-
-  if (it != elements_.end())
-    return (*it)->addPath(tag, tiffPath, pRoot, std::move(object));
 
   auto atc = [&] {
     if (tiffPath.size() == 1 && object) {
-      TiffComponent::UniquePtr tempObject;
-      std::swap(object, tempObject);
-      return tempObject;
+      return std::move(object);
     }
     return TiffCreator::create(tpi.extendedTag(), tpi.group());
   }();
   auto tc = addChild(std::move(atc));
   setCount(elements_.size());
-  return tc->addPath(tag, tiffPath, pRoot, std::move(object));
+  return tc->addPath(tag, tiffPath, pRoot, nullptr);
 }  // TiffBinaryArray::doAddPath
 
 TiffComponent* TiffComponent::addChild(TiffComponent::UniquePtr tiffComponent) {
@@ -557,11 +551,10 @@ TiffComponent* TiffDirectory::doAddChild(TiffComponent::UniquePtr tiffComponent)
 }  // TiffDirectory::doAddChild
 
 TiffComponent* TiffSubIfd::doAddChild(TiffComponent::UniquePtr tiffComponent) {
-  auto d = dynamic_cast<TiffDirectory*>(tiffComponent.get());
+  auto d = dynamic_cast<TiffDirectory*>(tiffComponent.release());
   if (!d) {
     throw Error(ErrorCode::kerErrorMessage, "dynamic_cast to TiffDirectory failed");
   }
-  tiffComponent.release();
   ifds_.emplace_back(d);
   return d;
 }  // TiffSubIfd::doAddChild
@@ -1375,11 +1368,7 @@ size_t TiffDataEntry::doSizeData() const {
 }
 
 size_t TiffSubIfd::doSizeData() const {
-  size_t len = 0;
-  for (auto&& ifd : ifds_) {
-    len += ifd->size();
-  }
-  return len;
+  return std::transform_reduce(ifds_.begin(), ifds_.end(), size_t(0), std::plus<>(), std::mem_fn(&TiffSubIfd::size));
 }
 
 size_t TiffIfdMakernote::doSizeData() const {
@@ -1391,22 +1380,14 @@ size_t TiffComponent::sizeImage() const {
 }
 
 size_t TiffDirectory::doSizeImage() const {
-  size_t len = 0;
-  for (auto&& component : components_) {
-    len += component->sizeImage();
-  }
-  if (pNext_) {
-    len += pNext_->sizeImage();
-  }
-  return len;
+  size_t len = pNext_ ? pNext_->sizeImage() : 0;
+  return std::transform_reduce(components_.begin(), components_.end(), len, std::plus<>(),
+                               std::mem_fn(&TiffDirectory::sizeImage));
 }
 
 size_t TiffSubIfd::doSizeImage() const {
-  size_t len = 0;
-  for (auto&& ifd : ifds_) {
-    len += ifd->sizeImage();
-  }
-  return len;
+  return std::transform_reduce(ifds_.begin(), ifds_.end(), size_t(0), std::plus<>(),
+                               std::mem_fn(&TiffSubIfd::sizeImage));
 }  // TiffSubIfd::doSizeImage
 
 size_t TiffIfdMakernote::doSizeImage() const {

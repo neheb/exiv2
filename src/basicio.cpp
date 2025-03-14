@@ -19,9 +19,6 @@
 #include <fstream>  // write the temporary file
 #include <iostream>
 
-// + standard includes
-#include <fcntl.h>  // _O_BINARY in FileIo::FileIo
-
 #if __has_include(<sys/mman.h>)
 #include <sys/mman.h>  // for mmap and munmap
 #endif
@@ -39,6 +36,7 @@
 #ifdef EXV_ENABLE_FILESYSTEM
 #include <filesystem>
 #ifdef _WIN32
+#include <fcntl.h>  // _O_BINARY in FileIo::FileIo
 #include <io.h>
 #include <windows.h>
 #endif
@@ -88,7 +86,6 @@ class FileIo::Impl {
 #endif
   byte* pMappedArea_{};    //!< Pointer to the memory-mapped area
   size_t mappedLength_{};  //!< Size of the memory-mapped area
-  bool isMalloced_{};      //!< Is the mapped area allocated?
   bool isWriteable_{};     //!< Can the mapped area be written to?
   // TYPES
   //! Simple struct stat wrapper for internal use
@@ -391,7 +388,7 @@ void FileIo::transfer(BasicIo& src) {
 
     bool statOk = true;
     fs::perms origStMode;
-    auto pf = path();
+    const auto& pf = path();
 
     Impl::StructStat buf1;
     if (p_->stat(buf1) == -1) {
@@ -513,7 +510,7 @@ size_t FileIo::size() const {
   Impl::StructStat buf;
   if (p_->stat(buf))
     return std::numeric_limits<size_t>::max();
-  return buf.st_size;
+  return static_cast<size_t>(buf.st_size);
 }
 
 int FileIo::open() {
@@ -1484,7 +1481,7 @@ void HttpIo::HttpImpl::writeRemote(const byte* data, size_t size, size_t from, s
       "Content-Type: application/x-www-form-urlencoded\n"
       "\n{}\r\n",
       postData.length(), postData);
-  request["header"] = header;
+  request["header"] = std::move(header);
 
   int serverCode = http(request, response, errors);
   if (serverCode < 0 || serverCode >= 400 || !errors.empty()) {
@@ -1695,7 +1692,7 @@ DataBuf readFile(const std::string& path) {
   if (file.open("rb") != 0) {
     throw Error(ErrorCode::kerFileOpenFailed, path, "rb", strError());
   }
-  DataBuf buf(fs::file_size(path));
+  DataBuf buf(static_cast<size_t>(fs::file_size(path)));
   if (file.read(buf.data(), buf.size()) != buf.size()) {
     throw Error(ErrorCode::kerCallFailed, path, strError(), "FileIo::read");
   }

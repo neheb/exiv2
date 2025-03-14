@@ -45,7 +45,6 @@
 #endif  // EXV_ENABLE_VIDEO
 
 // + standard includes
-#include <array>
 #include <bit>
 #include <cstdio>
 #include <cstring>
@@ -124,7 +123,9 @@ constexpr Registry registry[] = {
 std::string pathOfFileUrl(const std::string& url) {
   std::string path = url.substr(7);
   size_t found = path.find('/');
-  return (found == std::string::npos) ? path : path.substr(found);
+  if (found == std::string::npos)
+    return path;
+  return path.substr(found);
 }
 #endif
 
@@ -355,8 +356,6 @@ void Image::printIFDStructure(BasicIo& io, std::ostream& out, Exiv2::PrintStruct
         throw Error(ErrorCode::kerInvalidTypeValue);
       }
 
-      std::string sp;  // output spacer
-
       // prepare to print the value
       uint32_t kount = [=] {
         // haul in all the data
@@ -391,8 +390,8 @@ void Image::printIFDStructure(BasicIo& io, std::ostream& out, Exiv2::PrintStruct
       if (allocate64 > io.size()) {
         throw Error(ErrorCode::kerInvalidMalloc);
       }
-      DataBuf buf(allocate64);                     // allocate a buffer
-      std::copy_n(dir.c_data(8), 4, buf.begin());  // copy dir[8:11] into buffer (short strings)
+      DataBuf buf(allocate64);                       // allocate a buffer
+      std::copy_n(dir.begin() + 8, 4, buf.begin());  // copy dir[8:11] into buffer (short strings)
 
       // We have already checked that this multiplication cannot overflow.
       const size_t count_x_size = count * size;
@@ -408,6 +407,7 @@ void Image::printIFDStructure(BasicIo& io, std::ostream& out, Exiv2::PrintStruct
       if (bPrint) {
         const size_t address = start + 2 + (i * 12);
         const std::string offsetString = bOffsetIsPointer ? stringFormat("{:9}", offset) : "";
+        std::string sp;  // output spacer
 
         out << Internal::indent(depth)
             << stringFormat("{:8} | {:#06x} {:<28} | {:>9} | {:>8} | {:9} | ", address, tag, tagName(tag),
@@ -452,10 +452,10 @@ void Image::printIFDStructure(BasicIo& io, std::ostream& out, Exiv2::PrintStruct
 
             const size_t restore = io.tell();
             io.seekOrThrow(offset, BasicIo::beg, ErrorCode::kerCorruptedMetadata);  // position
-            std::vector<byte> bytes(count);                                         // allocate memory
-            io.readOrThrow(bytes.data(), count, ErrorCode::kerCorruptedMetadata);
+            auto bytes = std::make_unique<byte[]>(count);                           // allocate memory
+            io.readOrThrow(bytes.get(), count, ErrorCode::kerCorruptedMetadata);
             io.seekOrThrow(restore, BasicIo::beg, ErrorCode::kerCorruptedMetadata);
-            IptcData::printStructure(out, makeSliceUntil(bytes.data(), count), depth);
+            IptcData::printStructure(out, makeSliceUntil(bytes.get(), count), depth);
           }
         } else if (option == kpsRecursive && tag == 0x927c /* MakerNote */ && count > 10) {
           const size_t restore = io.tell();  // save
@@ -896,7 +896,7 @@ void append(Blob& blob, const byte* buf, size_t len) {
       blob.reserve(size + 65536);
     }
     blob.resize(size + len);
-    std::copy_n(buf, len, &blob[size]);
+    std::copy_n(buf, len, blob.begin() + size);
   }
 }  // append
 

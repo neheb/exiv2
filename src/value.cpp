@@ -115,7 +115,7 @@ int DataValue::read(const std::string& buf) {
     val.push_back(static_cast<byte>(tmp));
   if (!is.eof())
     return 1;
-  value_.swap(val);
+  value_ = std::move(val);
   return 0;
 }
 
@@ -450,7 +450,7 @@ size_t XmpValue::copy(byte* buf, ByteOrder /*byteOrder*/) const {
   write(os);
   std::string s = os.str();
   if (!s.empty())
-    std::copy_n(s.data(), s.size(), buf);
+    std::copy(s.begin(), s.end(), buf);
   return s.size();
 }
 
@@ -501,7 +501,7 @@ int XmpTextValue::read(const std::string& buf) {
       throw Error(ErrorCode::kerInvalidXmpText, type);
     }
   }
-  value_ = b;
+  value_ = std::move(b);
   return 0;
 }
 
@@ -666,7 +666,7 @@ int LangAltValue::read(const std::string& buf) {
       b = buf.substr(pos + 1);
   }
 
-  value_[lang] = b;
+  value_[lang] = std::move(b);
   return 0;
 }
 
@@ -835,10 +835,7 @@ DateValue* DateValue::clone_() const {
 
 std::ostream& DateValue::write(std::ostream& os) const {
   // Write DateValue in ISO 8601 Extended format: YYYY-MM-DD
-  std::ios::fmtflags f(os.flags());
-  os << stringFormat("{:04}-{:02}-{:02}", date_.year, date_.month, date_.day);
-  os.flags(f);
-  return os;
+  return os << stringFormat("{:04}-{:02}-{:02}", date_.year, date_.month, date_.day);
 }
 
 int64_t DateValue::toInt64(size_t /*n*/) const {
@@ -1015,12 +1012,8 @@ std::ostream& TimeValue::write(std::ostream& os) const {
   if (time_.tzHour < 0 || time_.tzMinute < 0)
     plusMinus = '-';
 
-  std::ios::fmtflags f(os.flags());
-  os << stringFormat("{:02}:{:02}:{:02}{}{:02}:{:02}", time_.hour, time_.minute, time_.second, plusMinus,
-                     std::abs(time_.tzHour), std::abs(time_.tzMinute));
-  os.flags(f);
-
-  return os;
+  return os << stringFormat("{:02}:{:02}:{:02}{}{:02}:{:02}", time_.hour, time_.minute, time_.second, plusMinus,
+                            std::abs(time_.tzHour), std::abs(time_.tzMinute));
 }
 
 int64_t TimeValue::toInt64(size_t /*n*/) const {
@@ -1036,7 +1029,7 @@ int64_t TimeValue::toInt64(size_t /*n*/) const {
 }
 
 uint32_t TimeValue::toUint32(size_t /*n*/) const {
-  return std::clamp<int64_t>(toInt64(), 0, std::numeric_limits<uint32_t>::max());
+  return static_cast<uint32_t>(std::clamp<int64_t>(toInt64(), 0, std::numeric_limits<uint32_t>::max()));
 }
 
 float TimeValue::toFloat(size_t n) const {

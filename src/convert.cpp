@@ -21,7 +21,6 @@
 // + standard includes
 #include <algorithm>
 #include <functional>
-#include <iomanip>
 
 #ifdef EXV_HAVE_ICONV
 #include <iconv.h>
@@ -1433,7 +1432,7 @@ bool convertStringCharsetIconv(std::string& str, const char* from, const char* t
     iconv_close(cd);
 
   if (ret)
-    str = outstr;
+    str = std::move(outstr);
   return ret;
 }
 

@@ -6,7 +6,6 @@
 #include "error.hpp"
 #include "i18n.h"  // NLS support.
 #include "image_int.hpp"
-#include "metadatum.hpp"
 #include "tags_int.hpp"
 #include "types.hpp"
 #include "value.hpp"
@@ -22,7 +21,7 @@ struct XmpPrintInfo {
     return key == key_;
   }
 
-  const char* key_;           //!< XMP key
+  std::string_view key_;      //!< XMP key
   Exiv2::PrintFct printFct_;  //!< Print function
 };
 
@@ -4841,7 +4840,7 @@ const XmpPropertyInfo xmpAcdseeInfo[] = {
     {nullptr, nullptr, nullptr, invalidTypeId, xmpInternal, nullptr},
 };
 
-const XmpPrintInfo xmpPrintInfo[] = {
+constexpr XmpPrintInfo xmpPrintInfo[] = {
     {"Xmp.crs.CropUnits", EXV_PRINT_TAG(crsCropUnits)},
     {"Xmp.exif.ApertureValue", print0x9202},
     {"Xmp.exif.BrightnessValue", printFloat},
@@ -5001,7 +5000,7 @@ std::string XmpProperties::prefix(const std::string& ns) {
   std::string p;
   if (i != nsRegistry_.end())
     p = i->second.prefix_;
-  else if (auto xn = Exiv2::find(xmpNsInfo, XmpNsInfo::Ns{ns2}))
+  else if (auto xn = Exiv2::find(xmpNsInfo, XmpNsInfo::Ns{std::move(ns2)}))
     p = std::string(xn->prefix_);
   return p;
 }
@@ -5220,19 +5219,19 @@ void XmpKey::Impl::decomposeKey(const std::string& key) {
   if (XmpProperties::ns(prefix).empty())
     throw Error(ErrorCode::kerNoNamespaceForPrefix, prefix);
 
-  property_ = property;
-  prefix_ = prefix;
+  property_ = std::move(property);
+  prefix_ = std::move(prefix);
 }  // XmpKey::Impl::decomposeKey
 
 // *************************************************************************
 // free functions
 // *************************************************************************
 // free functions
-std::ostream& operator<<(std::ostream& os, const XmpPropertyInfo& property) {
+std::ostream& operator<<(std::ostream& os, const XmpPropertyInfo& propertyInfo) {
   // CSV encoded I am \"dead\" beat" => "I am ""dead"" beat"
   std::string escapedDesc;
   escapedDesc.push_back('"');
-  for (char c : std::string_view(property.desc_)) {
+  for (char c : std::string_view(propertyInfo.desc_)) {
     if (c == '"')
       escapedDesc += "\"\"";
     else
@@ -5240,11 +5239,9 @@ std::ostream& operator<<(std::ostream& os, const XmpPropertyInfo& property) {
   }
   escapedDesc.push_back('"');
 
-  os << stringFormat("{},{},{},{},{},{}\n", property.name_, property.title_, property.xmpValueType_,
-                     TypeInfo::typeName(property.typeId_),
-                     (property.xmpCategory_ == xmpExternal ? "External" : "Internal"), escapedDesc);
-
-  return os;
+  return os << stringFormat("{},{},{},{},{},{}\n", propertyInfo.name_, propertyInfo.title_, propertyInfo.xmpValueType_,
+                            TypeInfo::typeName(propertyInfo.typeId_),
+                            (propertyInfo.xmpCategory_ == xmpExternal ? "External" : "Internal"), escapedDesc);
 }
 //! @endcond
 

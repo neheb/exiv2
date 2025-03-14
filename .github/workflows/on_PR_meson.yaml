@@ -24,14 +24,14 @@ jobs:
       - name: Compile and Test
         run: |
           meson setup "${{github.workspace}}/build" --wrap-mode=${{matrix.deps}} -Dwarning_level=3
-          meson compile -C "${{github.workspace}}/build"
-          meson test -C "${{github.workspace}}/build"
+          meson compile -C "${{github.workspace}}/build" --verbose
+          meson test -C "${{github.workspace}}/build" --verbose
   Ubuntu-clang:
     runs-on: ubuntu-22.04
     name: Linux-Clang${{matrix.cxx}}-deps=${{matrix.deps}}
     strategy:
       matrix:
-        cxx: ['11', '19']
+        cxx: ['11', '20']
         deps: ['forcefallback', 'default']
     steps:
       - uses: actions/checkout@v4
@@ -48,6 +48,42 @@ jobs:
         run: |
           meson setup "${{github.workspace}}/build" --wrap-mode=${{matrix.deps}} -Dwarning_level=3
           meson compile -C "${{github.workspace}}/build" --verbose
+          meson test -C "${{github.workspace}}/build" --verbose
+  Alpine:
+    runs-on: ubuntu-22.04
+    name: Alpine-${{matrix.platform}}-deps=${{matrix.deps}}
+    strategy:
+      matrix:
+        deps: ['forcefallback', 'default']
+        platform: ['x86', 'x86_64', 'armhf', 'armv7', 'aarch64', 'ppc64le', 'riscv64', 's390x']
+    defaults:
+      run:
+        shell: alpine.sh {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jirutka/setup-alpine@v1
+        with:
+          branch: edge
+          arch: ${{matrix.platform}}
+          packages: >
+            build-base
+            cmake
+            meson
+            samurai
+            py3-pip
+            pkgconf
+            python3
+            curl-dev
+            expat-dev
+            gettext-tiny-dev
+            gtest-dev
+            inih-dev
+            inih-inireader-dev
+            zlib-dev
+      - name: Compile and Test
+        run: |
+          meson setup "${{github.workspace}}/build" --wrap-mode=${{matrix.deps}} -Dwarning_level=3 -Dcpp_std=c++20
+          meson compile -C "${{github.workspace}}/build"
           meson test -C "${{github.workspace}}/build" --verbose
   VisualStudio:
     runs-on: windows-latest
@@ -69,7 +105,7 @@ jobs:
 
       - name: Compile and Test
         run: |
-          meson setup "${{github.workspace}}/build" --wrap-mode=${{matrix.deps}} -Dwarning_level=3 -Dcpp_std=c++latest -Db_sanitize=address
+          meson setup "${{github.workspace}}/build" --wrap-mode=${{matrix.deps}} -Dwarning_level=3 -Dcpp_std=c++latest -Ddefault_library=static
           meson compile -C "${{github.workspace}}/build" --verbose
           meson test -C "${{github.workspace}}/build" --verbose
   VisualStudio-clang-cl:
@@ -92,7 +128,7 @@ jobs:
           CC: clang-cl
           CXX: clang-cl
         run: |
-          meson setup "${{github.workspace}}/build" --wrap-mode=${{matrix.deps}} -Dwarning_level=3 -Dcpp_std=c++latest -Db_sanitize=address
+          meson setup "${{github.workspace}}/build" --wrap-mode=${{matrix.deps}} -Dwarning_level=3 -Dcpp_std=c++latest -Db_sanitize=address -Ddefault_library=static
           meson compile -C "${{github.workspace}}/build" --verbose
           meson test -C "${{github.workspace}}/build" --verbose
   MSYS2:
@@ -106,6 +142,8 @@ jobs:
       run:
         shell: msys2 {0}
     steps:
+      - run: git config --global core.autocrlf input
+        shell: cmd
       - uses: actions/checkout@v4
 
       - uses: msys2/setup-msys2@v2
@@ -116,14 +154,13 @@ jobs:
             cmake:p
             curl:p
             gtest:p
-            libinih:p
             meson:p
             ninja:p
             pkgconf:p
 
       - name: Compile and Test
         run: |
-          meson setup "${{github.workspace}}/build" -Dauto_features=${{matrix.deps}} -Dwarning_level=3
+          meson setup "${{github.workspace}}/build" -Dauto_features=${{matrix.deps}} -Dwarning_level=3 -Ddefault_library=static
           meson compile -C "${{github.workspace}}/build" --verbose
           meson test -C "${{github.workspace}}/build" --verbose
   MSYS:
@@ -162,9 +199,25 @@ jobs:
 
       - name: Compile and Test
         run: |
-          meson setup "${{github.workspace}}/build" -Dauto_features=${{matrix.deps}} -Dwarning_level=3 -Dnls=disabled -Db_sanitize=address,undefined
+          meson setup "${{github.workspace}}/build" -Dauto_features=${{matrix.deps}} -Dwarning_level=3 -Dnls=disabled -Db_lundef=false -Db_sanitize=address,undefined
           meson compile -C "${{github.workspace}}/build" --verbose
           meson test -C "${{github.workspace}}/build" --verbose
+  DragonflyBSD:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/dragonflybsd-vm@v1
+        env:
+          CC: gcc-13
+          CXX: g++-13
+        with:
+          envs: 'CC CXX'
+          prepare: |
+            pkg install -y cmake curl ninja meson gettext gcc13 python pkgconf googletest expat inih brotli
+          run: |
+            meson setup "${{github.workspace}}/build" -Dwarning_level=3
+            meson compile -C "${{github.workspace}}/build" --verbose
+            meson test -C "${{github.workspace}}/build" --verbose
   FreeBSD:
     runs-on: ubuntu-latest
     steps:
@@ -172,11 +225,23 @@ jobs:
       - uses: vmactions/freebsd-vm@v1
         with:
           prepare: |
-            pkg install -y cmake curl ninja meson gettext pkgconf googletest expat inih brotli libfmt
+            pkg install -y cmake curl ninja meson gettext python pkgconf googletest expat inih brotli
           run: |
             meson setup "${{github.workspace}}/build" -Dwarning_level=3
             meson compile -C "${{github.workspace}}/build" --verbose
             meson test -C "${{github.workspace}}/build" --verbose
+  OmniOS:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/omnios-vm@v1
+        with:
+          prepare: |
+            pkg install brotli cmake curl expat gcc14 meson-312 ninja pkg-config python-312
+          run: |
+            /usr/lib/python3.12/bin/meson setup "${{github.workspace}}/build" -Dwarning_level=3 -DunitTests=enabled -Dinih=enabled
+            /usr/lib/python3.12/bin/meson compile -C "${{github.workspace}}/build" --verbose
+            /usr/lib/python3.12/bin/meson test -C "${{github.workspace}}/build" --verbose
   Emscripten:
     runs-on: ubuntu-latest
     steps:

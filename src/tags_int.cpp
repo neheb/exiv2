@@ -2592,7 +2592,7 @@ std::ostream& printBitmask(std::ostream& os, const Value& value, const ExifData*
 }
 
 float fnumber(float apertureValue) {
-  float result = std::pow(2.0F, apertureValue / 2.F);
+  float result = std::exp2(apertureValue / 2.F);
   if (std::abs(result - 3.5) < 0.1) {
     result = 3.5;
   }
@@ -2601,7 +2601,7 @@ float fnumber(float apertureValue) {
 
 URational exposureTime(float shutterSpeedValue) {
   URational ur(1, 1);
-  const double tmp = std::pow(2.0, shutterSpeedValue);
+  const double tmp = std::exp2(shutterSpeedValue);
   if (tmp > 1) {
     const double x = std::round(tmp);
     // Check that x is within the range of a uint32_t before casting.
@@ -2624,7 +2624,7 @@ uint16_t tagNumber(const std::string& tagName, IfdId ifdId) {
     return ti->tag_;
   if (!isHex(tagName, 4, "0x"))
     throw Error(ErrorCode::kerInvalidTag, tagName, ifdId);
-  return std::stoi(tagName, nullptr, 16);
+  return static_cast<uint16_t>(std::stoi(tagName, nullptr, 16));
 }  // tagNumber
 
 std::ostream& printInt64(std::ostream& os, const Value& value, const ExifData*) {
@@ -2737,7 +2737,8 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
     fNumber2 = value.toFloat(3);
 
   // first value must not be bigger than second
-  if ((focalLength1 > focalLength2 && focalLength2 > 0.0f) || (fNumber1 > fNumber2 && fNumber2 > 0.0f)) {
+  if ((std::isgreater(focalLength1, focalLength2) && std::isgreater(focalLength2, 0.0f)) ||
+      (std::isgreater(fNumber1, fNumber2) && std::isgreater(fNumber2, 0.0f))) {
     os << "(" << value << ")";
     return os;
   }
@@ -2749,31 +2750,31 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
   }
 
   // lens specification available - at least parts
-  if (focalLength1 == 0.0f)
-    os << "n/a";
-  else
+  if (std::isgreater(focalLength1, 0.0f))
     os << std::setprecision(5) << focalLength1;
+  else
+    os << "n/a";
   if (focalLength1 != focalLength2) {
-    if (focalLength2 == 0.0f)
-      os << "-n/a ";
-    else
+    if (std::isgreater(focalLength2, 0.0f))
       os << "-" << std::setprecision(5) << focalLength2;
+    else
+      os << "-n/a ";
   }
   os << "mm";
   std::ostringstream oss;
   oss.copyfmt(os);
 
-  if (fNumber1 > 0.0f || fNumber2 > 0.0f) {
+  if (std::isgreater(fNumber1, 0.0f) || std::isgreater(fNumber2, 0.0f)) {
     os << " F";
-    if (fNumber1 == 0.0f)
-      os << " n/a";
-    else
+    if (std::isgreater(fNumber1, 0.0f))
       os << std::setprecision(2) << fNumber1;
+    else
+      os << " n/a";
     if (fNumber1 != fNumber2) {
-      if (fNumber2 == 0.0f)
-        os << "-n/a";
-      else
+      if (std::isgreater(fNumber2, 0.0f))
         os << "-" << std::setprecision(2) << fNumber2;
+      else
+        os << "-n/a";
     }
   }
   os.copyfmt(oss);
