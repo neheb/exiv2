@@ -6,7 +6,7 @@ project(
   default_options: ['warning_level=0', 'cpp_std=c++20'],
 )
 
-cargs = ['-D_GNU_SOURCE']
+cargs = []
 cpp = meson.get_compiler('cpp')
 if host_machine.system() == 'windows' and get_option('default_library') != 'static'
   cargs += '-DEXIV2API=__declspec(dllexport)'
