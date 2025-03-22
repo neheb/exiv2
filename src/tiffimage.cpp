@@ -166,7 +166,7 @@ void TiffImage::writeMetadata() {
   std::cerr << "Writing TIFF file " << io_->path() << "\n";
 #endif
   ByteOrder bo = byteOrder();
-  byte* pData = nullptr;
+  const byte* pData = nullptr;
   size_t size = 0;
   IoCloser closer(*io_);
   // Ensure that this is the correct image type
