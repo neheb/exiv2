@@ -49,8 +49,6 @@ namespace fs = std::filesystem;
 
 namespace Exiv2 {
 
-BasicIo::~BasicIo() = default;
-
 void BasicIo::readOrThrow(byte* buf, size_t rcount, ErrorCode err) {
   const size_t nread = read(buf, rcount);
   Internal::enforce(nread == rcount, err);
@@ -1060,8 +1058,6 @@ size_t RemoteIo::Impl::populateBlocks(size_t lowBlock, size_t highBlock) {
 
   return rcount;
 }
-
-RemoteIo::RemoteIo() = default;
 
 RemoteIo::~RemoteIo() {
   if (p_) {
