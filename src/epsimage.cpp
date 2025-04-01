@@ -1118,10 +1118,12 @@ Image::UniquePtr newEpsInstance(BasicIo::UniquePtr io, bool create) {
 
 bool isEpsType(BasicIo& iIo, bool advance) {
   // read as many bytes as needed for the longest (DOS) EPS signature
-  size_t bufSize = dosEpsSignature.size();
-  for (auto&& i : epsFirstLine) {
-    bufSize = std::max(bufSize, i.size());
-  }
+  constexpr auto bufSize = [] {
+    size_t maxSize = dosEpsSignature.size();
+    for (auto i : epsFirstLine)
+      maxSize = std::max(maxSize, i.size());
+    return maxSize;
+  }();
   const size_t restore = iIo.tell();  // save
   DataBuf buf = iIo.read(bufSize);
   if (iIo.error() || buf.size() != bufSize) {
