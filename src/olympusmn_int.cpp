@@ -1591,7 +1591,7 @@ std::ostream& OlympusMakerNote::print0x0529(std::ostream& os, const Value& value
 
   const auto v0 = value.toInt64(0);
 
-  printTag<std::size(artFilters), artFilters>(os, v0, metadata);
+  EXV_PRINT_TAG(artFilters)(os, v0, metadata);
 
   if (v0 == 39) {  // The "Partial color" option also has a color choice
     const auto v3 = value.toInt64(3);
