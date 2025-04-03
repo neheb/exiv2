@@ -1171,9 +1171,8 @@ const TagInfo* OlympusMakerNote::tagListRi() {
 
 // Gradation
 std::ostream& OlympusMakerNote::print0x050f(std::ostream& os, const Value& value, const ExifData*) {
-  if ((value.count() != 3 && value.count() != 4) || value.typeId() != signedShort) {
+  if ((value.count() != 3 && value.count() != 4) || value.typeId() != signedShort)
     return os << value;
-  }
 
   if (value.toInt64(0) == -1 && value.toInt64(1) == -1 && value.toInt64(2) == 1)
     os << _("Low Key");
@@ -1187,14 +1186,11 @@ std::ostream& OlympusMakerNote::print0x050f(std::ostream& os, const Value& value
   if (value.count() == 4) {
     switch (value.toInt64(3)) {
       case 0:
-        os << ", " << _("User-Selected");
-        break;
+        return os << ", " << _("User-Selected");
       case 1:
-        os << ", " << _("Auto-Override");
-        break;
+        return os << ", " << _("Auto-Override");
       default:
-        os << value.toInt64(3);
-        break;
+        return os << value.toInt64(3);
     }
   }
   return os;
@@ -1202,35 +1198,27 @@ std::ostream& OlympusMakerNote::print0x050f(std::ostream& os, const Value& value
 
 // Olympus CameraSettings tag 0x0527 NoiseFilter
 std::ostream& OlympusMakerNote::print0x0527(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() != 3 || value.typeId() != signedShort || value.toInt64(1) != -2 || value.toInt64(2) != 1) {
+  if (value.count() != 3 || value.typeId() != signedShort || value.toInt64(1) != -2 || value.toInt64(2) != 1)
     return os << value;
-  }
 
   switch (value.toInt64(0)) {
     case -2:
-      os << _("Off");
-      break;
+      return os << _("Off");
     case -1:
-      os << _("Low");
-      break;
+      return os << _("Low");
     case 0:
-      os << _("Standard");
-      break;
+      return os << _("Standard");
     case 1:
-      os << _("High");
-      break;
-    default:
-      os << value.toInt64(0);
-      break;
+      return os << _("High");
   }
 
-  return os;
+  return os << value.toInt64(0);
 }
 
 std::ostream& OlympusMakerNote::print0x0200(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() != 3 || value.typeId() != unsignedLong) {
+  if (value.count() != 3 || value.typeId() != unsignedLong)
     return os << value;
-  }
+
   const auto l0 = value.toInt64(0);
   switch (l0) {
     case 0:
@@ -1276,9 +1264,9 @@ std::ostream& OlympusMakerNote::print0x0200(std::ostream& os, const Value& value
 }  // OlympusMakerNote::print0x0200
 
 std::ostream& OlympusMakerNote::print0x0204(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() == 0 || value.toRational().second == 0) {
+  if (value.count() == 0 || value.toRational().second == 0)
     return os << "(" << value << ")";
-  }
+
   float f = value.toFloat();
   if (f == 0.0F || f == 1.0F)
     return os << _("None");
@@ -1286,62 +1274,54 @@ std::ostream& OlympusMakerNote::print0x0204(std::ostream& os, const Value& value
 }  // OlympusMakerNote::print0x0204
 
 std::ostream& OlympusMakerNote::print0x1015(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.typeId() != unsignedShort) {
+  if (value.typeId() != unsignedShort)
     return os << value;
-  }
+
   if (value.count() == 1) {
     auto l0 = value.toInt64(0);
-    if (l0 == 1) {
-      os << _("Auto");
-    } else {
-      return os << value;
-    }
-  } else if (value.count() == 2) {
+    if (l0 == 1)
+      return os << _("Auto");
+    return os << value;
+  }
+
+  if (value.count() == 2) {
     auto l0 = value.toInt64(0);
     auto l1 = value.toInt64(1);
     if (l0 == 1) {
       if (l1 == 0)
-        os << _("Auto");
-      else
-        os << _("Auto") << " (" << l1 << ")";
-    } else if (l0 == 2) {
+        return os << _("Auto");
+      return os << _("Auto") << " (" << l1 << ")";
+    }
+
+    if (l0 == 2) {
       switch (l1) {
         case 2:
-          os << _("3000 Kelvin");
-          break;
+          return os << _("3000 Kelvin");
         case 3:
-          os << _("3700 Kelvin");
-          break;
+          return os << _("3700 Kelvin");
         case 4:
-          os << _("4000 Kelvin");
-          break;
+          return os << _("4000 Kelvin");
         case 5:
-          os << _("4500 Kelvin");
-          break;
+          return os << _("4500 Kelvin");
         case 6:
-          os << _("5500 Kelvin");
-          break;
+          return os << _("5500 Kelvin");
         case 7:
-          os << _("6500 Kelvin");
-          break;
+          return os << _("6500 Kelvin");
         case 8:
-          os << _("7500 Kelvin");
-          break;
+          return os << _("7500 Kelvin");
         default:
-          os << value;
-          break;
+          return os << value;
       }
-    } else if (l0 == 3) {
+    }
+
+    if (l0 == 3) {
       if (l1 == 0)
-        os << _("One-touch");
-      else
-        os << value;
-    } else
+        return os << _("One-touch");
       return os << value;
-  } else {
+    }
     return os << value;
   }
-  return os;
+  return os << value;
 }  // OlympusMakerNote::print0x1015
 
 //! OlympusEq LensType, tag 0x201
@@ -1595,8 +1575,7 @@ std::ostream& OlympusMakerNote::print0x0529(std::ostream& os, const Value& value
 
   if (v0 == 39) {  // The "Partial color" option also has a color choice
     const auto v3 = value.toInt64(3);
-    os << " (" << _("position") << " " << (v3 + 1) << ")";
-    return os;
+    return os << " (" << _("position") << " " << (v3 + 1) << ")";
   }
 
   return os;
@@ -1604,9 +1583,8 @@ std::ostream& OlympusMakerNote::print0x0529(std::ostream& os, const Value& value
 
 // Olympus FocusInfo tag 0x1209 ManualFlash
 std::ostream& OlympusMakerNote::print0x1209(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() != 2 || value.typeId() != unsignedShort) {
+  if (value.count() != 2 || value.typeId() != unsignedShort)
     return os << value;
-  }
 
   switch (value.toInt64(0)) {
     case 0:
@@ -1619,10 +1597,7 @@ std::ostream& OlympusMakerNote::print0x1209(std::ostream& os, const Value& value
       os << value.toInt64(0);
       break;
   }
-  os << " ";
-  os << value.toInt64(1);
-
-  return os;
+  return os << " " << value.toInt64(1);
 }  // OlympusMakerNote::print0x1209
 
 // Olympus FocusDistance 0x0305

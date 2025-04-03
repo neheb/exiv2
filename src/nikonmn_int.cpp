@@ -173,12 +173,9 @@ const TagInfo* Nikon1MakerNote::tagList() {
 }
 
 std::ostream& Nikon1MakerNote::print0x0002(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() > 1) {
-    os << value.toInt64(1);
-  } else {
-    os << "(" << value << ")";
-  }
-  return os;
+  if (value.count() > 1)
+    return os << value.toInt64(1);
+  return os << "(" << value << ")";
 }
 
 static std::string getKeyString(const std::string& key, const ExifData* metadata) {
@@ -207,35 +204,29 @@ std::ostream& Nikon1MakerNote::printBarValue(std::ostream& os, const Value& valu
 std::ostream& Nikon1MakerNote::print0x0007(std::ostream& os, const Value& value, const ExifData*) {
   std::string focus = value.toString();
   if (focus == "AF-C  ")
-    os << _("Continuous autofocus");
-  else if (focus == "AF-S  ")
-    os << _("Single autofocus");
-  else if (focus == "AF-A  ")
-    os << _("Automatic");
-  else
-    os << "(" << value << ")";
-  return os;
+    return os << _("Continuous autofocus");
+  if (focus == "AF-S  ")
+    return os << _("Single autofocus");
+  if (focus == "AF-A  ")
+    return os << _("Automatic");
+  return os << "(" << value << ")";
 }
 
 std::ostream& Nikon1MakerNote::print0x0085(std::ostream& os, const Value& value, const ExifData*) {
   auto [r, s] = value.toRational();
-  if (r == 0) {
+  if (r == 0)
     return os << _("Unknown");
-  }
-  if (s != 0) {
+  if (s != 0)
     return os << stringFormat("{:.2f} m", static_cast<float>(r) / s);
-  }
   return os << "(" << value << ")";
 }
 
 std::ostream& Nikon1MakerNote::print0x0086(std::ostream& os, const Value& value, const ExifData*) {
   auto [r, s] = value.toRational();
-  if (r == 0) {
+  if (r == 0)
     return os << _("Not used");
-  }
-  if (s == 0) {
+  if (s == 0)
     return os << "(" << value << ")";
-  }
   return os << stringFormat("{:.1f}x", static_cast<float>(r) / s);
 }
 
@@ -1019,7 +1010,7 @@ constexpr TagDetailsBitmask nikonFlashAdaptors[] = {
     {0x20, N_("Nikon Diffusion Dome")},
 };
 
-static void printFlashCompensationValue(std::ostream& os, const unsigned char value, const bool manualScale) {
+static std::ostream& printFlashCompensationValue(std::ostream& os, const unsigned char value, const bool manualScale) {
   std::ios::fmtflags f(os.flags());
   std::ostringstream oss;
   oss.copyfmt(os);
@@ -1041,7 +1032,7 @@ static void printFlashCompensationValue(std::ostream& os, const unsigned char va
     if (value > 48) {
       os << "(" << value << ")";
       os.flags(f);
-      return;
+      return os;
     }
     const auto mod = value % 6;
     auto temp = (value < 6) ? 0 : (value - mod) / 6;
@@ -1099,6 +1090,7 @@ static void printFlashCompensationValue(std::ostream& os, const unsigned char va
   }
   os.copyfmt(os);
   os.flags(f);
+  return os;
 }
 
 // Nikon3 Flash Info 1 Tag Info
@@ -1745,12 +1737,9 @@ std::ostream& Nikon3MakerNote::printIiIso(std::ostream& os, const Value& value, 
 }
 
 std::ostream& Nikon3MakerNote::print0x0002(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() > 1) {
-    os << value.toInt64(1);
-  } else {
-    os << "(" << value << ")";
-  }
-  return os;
+  if (value.count() > 1)
+    return os << value.toInt64(1);
+  return os << "(" << value << ")";
 }
 
 std::ostream& Nikon3MakerNote::printAf2AreaMode(std::ostream& os, const Value& value, const ExifData* metadata) {
@@ -1770,14 +1759,12 @@ std::ostream& Nikon3MakerNote::printAf2AreaMode(std::ostream& os, const Value& v
 std::ostream& Nikon3MakerNote::print0x0007(std::ostream& os, const Value& value, const ExifData*) {
   std::string focus = value.toString();
   if (focus == "AF-C  ")
-    os << _("Continuous autofocus");
-  else if (focus == "AF-S  ")
-    os << _("Single autofocus");
-  else if (focus == "AF-A  ")
-    os << _("Automatic");
-  else
-    os << "(" << value << ")";
-  return os;
+    return os << _("Continuous autofocus");
+  if (focus == "AF-S  ")
+    return os << _("Single autofocus");
+  if (focus == "AF-A  ")
+    return os << _("Automatic");
+  return os << "(" << value << ")";
 }
 
 std::ostream& Nikon3MakerNote::print0x0083(std::ostream& os, const Value& value, const ExifData*) {
@@ -1809,10 +1796,9 @@ std::ostream& Nikon3MakerNote::print0x0083(std::ostream& os, const Value& value,
 
 std::ostream& Nikon3MakerNote::print0x0084(std::ostream& os, const Value& value, const ExifData*) {
   std::ios::fmtflags f(os.flags());
-  if (value.count() != 4 || value.toRational(0).second == 0 || value.toRational(1).second == 0) {
-    os << "(" << value << ")";
-    return os;
-  }
+  if (value.count() != 4 || value.toRational(0).second == 0 || value.toRational(1).second == 0)
+    return os << "(" << value << ")";
+
   const int64_t len1 = value.toInt64(0);
   const int64_t len2 = value.toInt64(1);
 
@@ -1853,79 +1839,75 @@ std::ostream& Nikon3MakerNote::print0x0086(std::ostream& os, const Value& value,
 }
 
 std::ostream& Nikon3MakerNote::print0x0088(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.size() != 4) {  // Size is 4 even for those who map this way...
-    os << "(" << value << ")";
-  } else {
-    // Mapping by Roger Larsson
-    const uint32_t focusmetering = value.toUint32(0);
-    const uint32_t focuspoint = value.toUint32(1);
-    const uint32_t focusused = (value.toUint32(2) << 8) + value.toUint32(3);
-    // TODO: enum {standard, wide} combination = standard;
+  if (value.size() != 4)  // Size is 4 even for those who map this way...
+    return os << "(" << value << ")";
 
-    if (focusmetering == 0 && focuspoint == 0 && focusused == 0) {
-      // Special case, in Manual focus and with Nikon compacts
-      // this indicates that the field has no meaning.
-      // But when actually in "Single area, Center" this can mean
-      // that focus was not found (try this in AF-C mode)
-      // TODO: handle the meaningful case (interacts with other fields)
-      os << _("n/a");
-      return os;
-    }
+  // Mapping by Roger Larsson
+  const uint32_t focusmetering = value.toUint32(0);
+  const uint32_t focuspoint = value.toUint32(1);
+  const uint32_t focusused = (value.toUint32(2) << 8) + value.toUint32(3);
+  // TODO: enum {standard, wide} combination = standard;
 
-    switch (focusmetering) {
-      case 0x00:
-        os << _("Single area");
-        break;  // D70, D200
-      case 0x01:
-        os << _("Dynamic area");
-        break;  // D70, D200
-      case 0x02:
-        os << _("Closest subject");
-        break;  // D70, D200
-      case 0x03:
-        os << _("Group dynamic-AF");
-        break;  // D200
-      case 0x04:
-        os << _("Single area (wide)"); /* TODO: combination = wide; */
-        break;                         // D200
-      case 0x05:
-        os << _("Dynamic area (wide)"); /* TODO: combination = wide; */
-        break;                          // D200
-      default:
-        os << "(" << focusmetering << ")";
-        break;
-    }
-
-    char sep = ';';
-    if (focusmetering != 0x02) {  //  No user selected point for Closest subject
-      os << sep << ' ';
-
-      // What focuspoint did the user select?
-      if (focuspoint < nikonFocuspoints.size()) {
-        os << nikonFocuspoints[focuspoint];
-        // TODO: os << position[focuspoint][combination]
-      } else
-        os << "(" << focuspoint << ")";
-
-      sep = ',';
-    }
-
-    // What focuspoints(!) did the camera use? add if differs
-    if (focusused == 0)
-      os << sep << " " << _("none");
-    else if (focusused != 1U << focuspoint) {
-      // selected point was not the actually used one
-      // (Roger Larsson: my interpretation, verify)
-      os << sep;
-      for (size_t fpid = 0; fpid < nikonFocuspoints.size(); fpid++)
-        if (focusused & 1 << fpid)
-          os << ' ' << nikonFocuspoints[fpid];
-    }
-
-    os << " " << _("used");
+  if (focusmetering == 0 && focuspoint == 0 && focusused == 0) {
+    // Special case, in Manual focus and with Nikon compacts
+    // this indicates that the field has no meaning.
+    // But when actually in "Single area, Center" this can mean
+    // that focus was not found (try this in AF-C mode)
+    // TODO: handle the meaningful case (interacts with other fields)
+    return os << _("n/a");
   }
 
-  return os;
+  switch (focusmetering) {
+    case 0x00:
+      os << _("Single area");
+      break;  // D70, D200
+    case 0x01:
+      os << _("Dynamic area");
+      break;  // D70, D200
+    case 0x02:
+      os << _("Closest subject");
+      break;  // D70, D200
+    case 0x03:
+      os << _("Group dynamic-AF");
+      break;  // D200
+    case 0x04:
+      os << _("Single area (wide)"); /* TODO: combination = wide; */
+      break;                         // D200
+    case 0x05:
+      os << _("Dynamic area (wide)"); /* TODO: combination = wide; */
+      break;                          // D200
+    default:
+      os << "(" << focusmetering << ")";
+      break;
+  }
+
+  char sep = ';';
+  if (focusmetering != 0x02) {  //  No user selected point for Closest subject
+    os << sep << ' ';
+
+    // What focuspoint did the user select?
+    if (focuspoint < nikonFocuspoints.size()) {
+      os << nikonFocuspoints[focuspoint];
+      // TODO: os << position[focuspoint][combination]
+    } else
+      os << "(" << focuspoint << ")";
+
+    sep = ',';
+  }
+
+  // What focuspoints(!) did the camera use? add if differs
+  if (focusused == 0)
+    os << sep << " " << _("none");
+  else if (focusused != 1U << focuspoint) {
+    // selected point was not the actually used one
+    // (Roger Larsson: my interpretation, verify)
+    os << sep;
+    for (size_t fpid = 0; fpid < nikonFocuspoints.size(); fpid++)
+      if (focusused & 1 << fpid)
+        os << ' ' << nikonFocuspoints[fpid];
+  }
+
+  return os << " " << _("used");
 }
 
 std::ostream& Nikon3MakerNote::printAfPointsInFocus(std::ostream& os, const Value& value, const ExifData* metadata) {
@@ -1975,12 +1957,9 @@ std::ostream& Nikon3MakerNote::print0x0089(std::ostream& os, const Value& value,
       }
     }
   }
-  if (d70) {
-    EXV_PRINT_TAG_BITMASK(nikonShootingModeD70)(os, value, nullptr);
-  } else {
-    EXV_PRINT_TAG_BITMASK(nikonShootingMode)(os, value, nullptr);
-  }
-  return os;
+  if (d70)
+    return EXV_PRINT_TAG_BITMASK(nikonShootingModeD70)(os, value, nullptr);
+  return EXV_PRINT_TAG_BITMASK(nikonShootingMode)(os, value, nullptr);
 }
 
 std::ostream& Nikon3MakerNote::print0x008b(std::ostream& os, const Value& value, const ExifData*) {
@@ -3333,10 +3312,9 @@ std::ostream& Nikon3MakerNote::printExitPupilPosition(std::ostream& os, const Va
 }
 
 std::ostream& Nikon3MakerNote::printFlashFocalLength(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
+
   auto temp = value.toInt64();
   if (temp == 0 || temp == 255)
     return os << _("n/a");
@@ -3345,9 +3323,9 @@ std::ostream& Nikon3MakerNote::printFlashFocalLength(std::ostream& os, const Val
 }
 
 std::ostream& Nikon3MakerNote::printRepeatingFlashRate(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
+  if (value.count() != 1 || value.typeId() != unsignedByte)
     return os << "(" << value << ")";
-  }
+
   auto temp = value.toInt64();
   if (temp == 0 || temp == 255)
     return os << _("n/a");
@@ -3368,14 +3346,9 @@ std::ostream& Nikon3MakerNote::printRepeatingFlashCount(std::ostream& os, const 
 
 std::ostream& Nikon3MakerNote::printExternalFlashData1Fl6(std::ostream& os, const Value& value,
                                                           const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
-  std::ostringstream oss;
-  oss.copyfmt(os);
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
+
   const auto v0 = value.toUint32(0);
   os << (v0 & 0x01 ? _("Fired") : _("Did not fire"));
 
@@ -3387,21 +3360,14 @@ std::ostream& Nikon3MakerNote::printExternalFlashData1Fl6(std::ostream& os, cons
       os << ", " << tempStr;
     }
   }
-  os.copyfmt(oss);
-  os.flags(f);
   return os;
 }
 
 std::ostream& Nikon3MakerNote::printExternalFlashData2Fl6(std::ostream& os, const Value& value,
                                                           const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
-  std::ostringstream oss;
-  oss.copyfmt(os);
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
+
   const auto v0 = value.toUint32(0);
   os << (v0 & 0x80 ? _("External flash on") : _("External flash off"));
 
@@ -3409,21 +3375,14 @@ std::ostream& Nikon3MakerNote::printExternalFlashData2Fl6(std::ostream& os, cons
     os << ", ";
     EXV_PRINT_TAG(nikonFlashControlMode)(os, value.toUint32() & 0x0F, metadata);
   }
-  os.copyfmt(oss);
-  os.flags(f);
   return os;
 }
 
 std::ostream& Nikon3MakerNote::printExternalFlashData1Fl7(std::ostream& os, const Value& value,
                                                           const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
-  std::ostringstream oss;
-  oss.copyfmt(os);
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
+
   const auto v0 = value.toUint32();
   os << (v0 & 0x01 ? _("External flash on") : _("External flash off"));
 
@@ -3438,344 +3397,191 @@ std::ostream& Nikon3MakerNote::printExternalFlashData1Fl7(std::ostream& os, cons
       os << ", " << tempStr;
     }
   }
-  os.copyfmt(oss);
-  os.flags(f);
   return os;
 }
 
 std::ostream& Nikon3MakerNote::printExternalFlashData2(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
-  EXV_PRINT_TAG(nikonFlashControlMode)(os, value.toUint32() & 0x0F, metadata);
-
-  os.flags(f);
-  return os;
+  return EXV_PRINT_TAG(nikonFlashControlMode)(os, value.toUint32() & 0x0F, metadata);
 }
 
 std::ostream& Nikon3MakerNote::printFlashMasterDataFl6(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata)
+    return os << "(" << value << ")";
 
   // Check if using an automated or manual mode
   auto pos = metadata->findKey(ExifKey("Exif.NikonFl6.ExternalFlashData1"));
-  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
   const auto mode = pos->toUint32(0) & 0x0F;
-  if (mode == 0) {
-    os << _("n/a");
-    os.flags(f);
-    return os;
-  }
+  if (mode == 0)
+    return os << _("n/a");
 
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
-
-  os.flags(f);
-  return os;
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
 }
 
 std::ostream& Nikon3MakerNote::printFlashMasterDataFl7(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata)
+    return os << "(" << value << ")";
 
   // Check if using an automated or manual mode
   auto pos = metadata->findKey(ExifKey("Exif.NikonFl7.ExternalFlashData2"));
-  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
   const auto mode = pos->toUint32(0) & 0x0F;
-  if (mode == 0) {
-    os << _("n/a");
-    os.flags(f);
-    return os;
-  }
+  if (mode == 0)
+    return os << _("n/a");
 
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
-
-  os.flags(f);
-  return os;
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
 }
 
 std::ostream& Nikon3MakerNote::printFlashGroupAControlData(std::ostream& os, const Value& value, const ExifData* data) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
-  std::ostringstream oss;
-  oss.copyfmt(os);
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
-  EXV_PRINT_TAG(nikonFlashControlMode)(os, value.toUint32() & 0x0F, data);
-
-  os.copyfmt(oss);
-  os.flags(f);
-  return os;
+  return EXV_PRINT_TAG(nikonFlashControlMode)(os, value.toUint32() & 0x0F, data);
 }
 
 std::ostream& Nikon3MakerNote::printFlashGroupBCControlData(std::ostream& os, const Value& value,
                                                             const ExifData* data) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
-  std::ostringstream oss;
-  oss.copyfmt(os);
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
+
   const auto temp = value.toUint32();
 
   EXV_PRINT_TAG(nikonFlashControlMode)(os, temp >> 4, data);
   os << ", ";
-  EXV_PRINT_TAG(nikonFlashControlMode)(os, temp & 0x0f, data);
-
-  os.copyfmt(oss);
-  os.flags(f);
-  return os;
+  return EXV_PRINT_TAG(nikonFlashControlMode)(os, temp & 0x0f, data);
 }
 
 std::ostream& Nikon3MakerNote::printFlashGroupADataFl6(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata)
+    return os << "(" << value << ")";
 
   // Check if using an automated or manual mode
   auto pos = metadata->findKey(ExifKey("Exif.NikonFl6.FlashGroupAControlData"));
-  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
   const auto mode = pos->toUint32(0) & 0x0F;
-  if (mode == 0) {
-    os << _("n/a");
-    os.flags(f);
-    return os;
-  }
+  if (mode == 0)
+    return os << _("n/a");
 
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
-
-  os.flags(f);
-  return os;
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
 }
 
 std::ostream& Nikon3MakerNote::printFlashGroupADataFl7(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata)
+    return os << "(" << value << ")";
 
   // Check if using an automated or manual mode
   auto pos = metadata->findKey(ExifKey("Exif.NikonFl7.FlashGroupAControlData"));
-  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
   const auto mode = pos->toUint32(0) & 0x0F;
-  if (mode == 0) {
-    os << _("n/a");
-    os.flags(f);
-    return os;
-  }
+  if (mode == 0)
+    return os << _("n/a");
 
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
-
-  os.flags(f);
-  return os;
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
 }
 
 std::ostream& Nikon3MakerNote::printFlashGroupBDataFl6(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata)
+    return os << "(" << value << ")";
 
   // Check if using an automated or manual mode
   auto pos = metadata->findKey(ExifKey("Exif.NikonFl6.FlashGroupBCControlData"));
-  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
   const auto mode = pos->toUint32(0) >> 4;
-  if (mode == 0) {
-    os << _("n/a");
-    os.flags(f);
-    return os;
-  }
+  if (mode == 0)
+    return os << _("n/a");
 
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
-
-  os.flags(f);
-  return os;
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
 }
 
 std::ostream& Nikon3MakerNote::printFlashGroupBDataFl7(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata)
+    return os << "(" << value << ")";
 
   // Check if using an automated or manual mode
   auto pos = metadata->findKey(ExifKey("Exif.NikonFl7.FlashGroupBCControlData"));
-  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
   const auto mode = pos->toUint32(0) >> 4;
-  if (mode == 0) {
-    os << _("n/a");
-    os.flags(f);
-    return os;
-  }
+  if (mode == 0)
+    return os << _("n/a");
 
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
-
-  os.flags(f);
-  return os;
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
 }
 
 std::ostream& Nikon3MakerNote::printFlashGroupCDataFl6(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata)
+    return os << "(" << value << ")";
 
   // Check if using an automated or manual mode
   auto pos = metadata->findKey(ExifKey("Exif.NikonFl6.FlashGroupBCControlData"));
-  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
   const auto mode = pos->toUint32(0) & 0x000F;
-  if (mode == 0) {
-    os << _("n/a");
-    os.flags(f);
-    return os;
-  }
+  if (mode == 0)
+    return os << _("n/a");
 
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
-
-  os.flags(f);
-  return os;
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
 }
 
 std::ostream& Nikon3MakerNote::printFlashGroupCDataFl7(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte || !metadata)
+    return os << "(" << value << ")";
 
   // Check if using an automated or manual mode
   auto pos = metadata->findKey(ExifKey("Exif.NikonFl7.FlashGroupBCControlData"));
-  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (pos == metadata->end() || pos->count() != 1 || pos->typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
   const auto mode = pos->toUint32(0) & 0x000F;
-  if (mode == 0) {
-    os << _("n/a");
-    os.flags(f);
-    return os;
-  }
+  if (mode == 0)
+    return os << _("n/a");
 
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
-
-  os.flags(f);
-  return os;
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), flashModeUsesManualScale(mode));
 }
 
 std::ostream& Nikon3MakerNote::printExternalFlashData3(std::ostream& os, const Value& value, const ExifData* data) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
-  EXV_PRINT_TAG(nikonFlashExposureComp)(os, value.toUint32(0) & 0x04, data);
-
-  os.flags(f);
-  return os;
+  return EXV_PRINT_TAG(nikonFlashExposureComp)(os, value.toUint32(0) & 0x04, data);
 }
 
 std::ostream& Nikon3MakerNote::printCameraExposureCompensation(std::ostream& os, const Value& value, const ExifData*) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
-  printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), false);
-  os.flags(f);
-  return os;
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
+
+  return printFlashCompensationValue(os, static_cast<unsigned char>(value.toUint32(0)), false);
 }
 
 std::ostream& Nikon3MakerNote::printExternalFlashData4(std::ostream& os, const Value& value, const ExifData* metadata) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
-    os << "(" << value << ")";
-    os.flags(f);
-    return os;
-  }
+  if (value.count() != 1 || value.typeId() != unsignedByte)
+    return os << "(" << value << ")";
 
-  EXV_PRINT_TAG(nikonFlashIlluminationPat)(os, value.toUint32(0), metadata);
-
-  os.flags(f);
-  return os;
+  return EXV_PRINT_TAG(nikonFlashIlluminationPat)(os, value.toUint32(0), metadata);
 }
 
 std::ostream& Nikon3MakerNote::printFlashZoomHeadPosition(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() != 1 || value.typeId() != unsignedByte) {
+  if (value.count() != 1 || value.typeId() != unsignedByte)
     return os << "(" << value << ")";
-  }
 
   auto v0 = value.toUint32(0);
-  if (v0 == 0) {
+  if (v0 == 0)
     return os << _("n/a");
-  }
 
   return os << stringFormat("{} mm", v0);
 }
@@ -3795,27 +3601,17 @@ std::ostream& Nikon3MakerNote::printPictureControl(std::ostream& os, const Value
     return os << "(" << value << ")";
   }
   const auto pcval = value.toInt64() - 0x80;
-  std::ostringstream oss;
-  oss.copyfmt(os);
   switch (pcval) {
     case 0:
-      os << _("Normal");
-      break;
+      return os << _("Normal");
     case 127:
-      os << _("n/a");
-      break;
+      return os << _("n/a");
     case -127:
-      os << _("User");
-      break;
+      return os << _("User");
     case -128:
-      os << _("Auto");
-      break;
-    default:
-      os << pcval;
-      break;
+      return os << _("Auto");
   }
-  os.copyfmt(oss);
-  return os;
+  return os << pcval;
 }
 
 std::ostream& Nikon3MakerNote::print0x009a(std::ostream& os, const Value& value, const ExifData*) {

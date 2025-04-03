@@ -900,15 +900,13 @@ constexpr TagDetails pentaxHighISONoiseReduction[] = {
 std::ostream& PentaxMakerNote::printVersion(std::ostream& os, const Value& value, const ExifData*) {
   std::string val = value.toString();
   std::replace(val.begin(), val.end(), ' ', '.');
-  os << val;
-  return os;
+  return os << val;
 }
 
 std::ostream& PentaxMakerNote::printResolution(std::ostream& os, const Value& value, const ExifData*) {
   std::string val = value.toString();
   std::replace(val.begin(), val.end(), ' ', 'x');
-  os << val;
-  return os;
+  return os << val;
 }
 
 std::ostream& PentaxMakerNote::printDate(std::ostream& os, const Value& value, const ExifData*) {
@@ -1002,10 +1000,9 @@ std::ostream& PentaxMakerNote::printShutterCount(std::ostream& os, const Value& 
   }
 
   if (dateIt == metadata->end() || dateIt->size() != 4 || timeIt == metadata->end() || timeIt->size() != 3 ||
-      value.size() != 4) {
-    os << "undefined";
-    return os;
-  }
+      value.size() != 4)
+    return os << "undefined";
+
   const uint32_t date = (dateIt->toUint32(0) << 24) + (dateIt->toUint32(1) << 16) + (dateIt->toUint32(2) << 8) +
                         (dateIt->toUint32(3) << 0);
   const uint32_t time = (timeIt->toUint32(0) << 24) + (timeIt->toUint32(1) << 16) + (timeIt->toUint32(2) << 8);
@@ -1016,8 +1013,7 @@ std::ostream& PentaxMakerNote::printShutterCount(std::ostream& os, const Value& 
   // function is taken from Phil Harvey's ExifTool: Pentax.pm file,
   // CryptShutterCount() routine.
   const uint32_t count = countEnc ^ date ^ (~time);
-  os << count;
-  return os;
+  return os << count;
 }
 
 // #1144 begin
@@ -1071,8 +1067,7 @@ static std::ostream& resolveLens0x32c(std::ostream& os, const Value& value, cons
     if (index > 0) {
       const unsigned long lensID = 0x32c;
       auto td = Exiv2::find(pentaxLensType, lensID);
-      os << exvGettext(td[index].label_);
-      return os;
+      return os << exvGettext(td[index].label_);
     }
   } catch (...) {
   }
@@ -1135,8 +1130,7 @@ static std::ostream& resolveLens0x3ff(std::ostream& os, const Value& value, cons
     if (index > 0) {
       const unsigned long lensID = 0x3ff;
       auto td = Exiv2::find(pentaxLensType, lensID);
-      os << exvGettext(td[index].label_);
-      return os;
+      return os << exvGettext(td[index].label_);
     }
   } catch (...) {
   }
@@ -1162,8 +1156,7 @@ static std::ostream& resolveLens0x8ff(std::ostream& os, const Value& value, cons
     if (index > 0) {
       const unsigned long lensID = 0x8ff;
       auto td = Exiv2::find(pentaxLensType, lensID);
-      os << exvGettext(td[index].label_);
-      return os;
+      return os << exvGettext(td[index].label_);
     }
   } catch (...) {
   }
@@ -1196,8 +1189,7 @@ static std::ostream& resolveLens0x319(std::ostream& os, const Value& value, cons
     if (index > 0) {
       const unsigned long lensID = 0x319;
       auto td = Exiv2::find(pentaxLensType, lensID);
-      os << exvGettext(td[index].label_);
-      return os;
+      return os << exvGettext(td[index].label_);
     }
   } catch (...) {
   }

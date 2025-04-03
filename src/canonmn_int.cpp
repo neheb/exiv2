@@ -2837,12 +2837,9 @@ std::ostream& CanonMakerNote::printCs0x0002(std::ostream& os, const Value& value
   if (value.typeId() != unsignedShort || value.count() == 0)
     return os << value;
 
-  if (auto l = value.toInt64(); l == 0) {
-    os << "Off";
-  } else {
-    os << l / 10.0 << " s";
-  }
-  return os;
+  if (auto l = value.toInt64(); l != 0)
+    return os << l / 10.0 << " s";
+  return os << "Off";
 }
 
 std::ostream& printCsLensFFFF(std::ostream& os, const Value& value, const ExifData* metadata) {
@@ -2906,20 +2903,16 @@ std::ostream& printCsLensTypeByMetadata(std::ostream& os, const Value& value, co
   auto pos = metadata->findKey(lensKey);
   // catch possible error cases
   if (pos == metadata->end() || pos->value().count() < 3 || pos->value().typeId() != unsignedShort ||
-      pos->value().toFloat(2) == 0.0F) {
-    os << "Unknown Lens (" << lensType << ")";
-    return os;
-  }
+      pos->value().toFloat(2) == 0.0F)
+    return os << "Unknown Lens (" << lensType << ")";
 
   auto const exifFlMin = static_cast<int>(static_cast<float>(pos->value().toInt64(1)) / pos->value().toFloat(2));
   auto const exifFlMax = static_cast<int>(static_cast<float>(pos->value().toInt64(0)) / pos->value().toFloat(2));
 
   ExifKey aperKey("Exif.CanonCs.MaxAperture");
   pos = metadata->findKey(aperKey);
-  if (pos == metadata->end() || pos->value().count() != 1 || pos->value().typeId() != unsignedShort) {
-    os << "Unknown Lens (" << lensType << ")";
-    return os;
-  }
+  if (pos == metadata->end() || pos->value().count() != 1 || pos->value().typeId() != unsignedShort)
+    return os << "Unknown Lens (" << lensType << ")";
 
   auto exifAperMax = fnumber(canonEv(static_cast<int16_t>(pos->value().toInt64(0))));
 
@@ -3057,10 +3050,9 @@ std::ostream& CanonMakerNote::printSi0x0009(std::ostream& os, const Value& value
   if (value.typeId() != unsignedShort || value.count() == 0)
     return os << value;
 
-  const auto l = value.toInt64();
-  os << l << "";
   // Todo: determine unit
-  return os;
+  const auto l = value.toInt64();
+  return os << l << "";
 }
 
 std::ostream& CanonMakerNote::printSi0x000c(std::ostream& os, const Value& value, const ExifData*) {
@@ -3089,8 +3081,7 @@ std::ostream& CanonMakerNote::printSi0x000e(std::ostream& os, const Value& value
   } else {
     EXV_PRINT_TAG_BITMASK(canonSiAFPointUsed)(os, value, pExifData);
   }
-  os << " used";
-  return os;
+  return os << " used";
 }
 
 std::ostream& CanonMakerNote::printSi0x0013(std::ostream& os, const Value& value, const ExifData*) {

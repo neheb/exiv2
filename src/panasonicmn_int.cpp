@@ -562,46 +562,44 @@ const TagInfo* PanasonicMakerNote::tagList() {
 
 // tag Focus Mode
 std::ostream& PanasonicMakerNote::print0x000f(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.count() < 2 || value.typeId() != unsignedByte) {
+  if (value.count() < 2 || value.typeId() != unsignedByte)
     return os << value;
-  }
+
   const auto l0 = value.toInt64(0);
   const auto l1 = value.toInt64(1);
   if (l0 == 0 && l1 == 1)
-    os << _("Spot mode on or 9 area");
-  else if (l0 == 0 && l1 == 16)
-    os << _("Spot mode off or 3-area (high speed)");
-  else if (l0 == 0 && l1 == 23)
-    os << _("23-area");
-  else if (l0 == 0 && l1 == 49)
-    os << _("49-area");
-  else if (l0 == 0 && l1 == 225)
-    os << _("225-area");
-  else if (l0 == 1 && l1 == 0)
-    os << _("Spot focusing");
-  else if (l0 == 1 && l1 == 1)
-    os << _("5-area");
-  else if (l0 == 16 && l1 == 0)
-    os << _("1-area");
-  else if (l0 == 16 && l1 == 16)
-    os << _("1-area (high speed)");
-  else if (l0 == 32 && l1 == 0)
-    os << _("3-area (auto)");
-  else if (l0 == 32 && l1 == 1)
-    os << _("3-area (left)");
-  else if (l0 == 32 && l1 == 2)
-    os << _("3-area (center)");
-  else if (l0 == 32 && l1 == 3)
-    os << _("3-area (right)");
-  else if (l0 == 64 && l1 == 0)
-    os << _("Face Detect");
-  else if (l0 == 128 && l1 == 0)
-    os << _("Spot Focusing 2");
-  else if (l0 == 240 && l1 == 0)
-    os << _("Tracking");
-  else
-    os << value;
-  return os;
+    return os << _("Spot mode on or 9 area");
+  if (l0 == 0 && l1 == 16)
+    return os << _("Spot mode off or 3-area (high speed)");
+  if (l0 == 0 && l1 == 23)
+    return os << _("23-area");
+  if (l0 == 0 && l1 == 49)
+    return os << _("49-area");
+  if (l0 == 0 && l1 == 225)
+    return os << _("225-area");
+  if (l0 == 1 && l1 == 0)
+    return os << _("Spot focusing");
+  if (l0 == 1 && l1 == 1)
+    return os << _("5-area");
+  if (l0 == 16 && l1 == 0)
+    return os << _("1-area");
+  if (l0 == 16 && l1 == 16)
+    return os << _("1-area (high speed)");
+  if (l0 == 32 && l1 == 0)
+    return os << _("3-area (auto)");
+  if (l0 == 32 && l1 == 1)
+    return os << _("3-area (left)");
+  if (l0 == 32 && l1 == 2)
+    return os << _("3-area (center)");
+  if (l0 == 32 && l1 == 3)
+    return os << _("3-area (right)");
+  if (l0 == 64 && l1 == 0)
+    return os << _("Face Detect");
+  if (l0 == 128 && l1 == 0)
+    return os << _("Spot Focusing 2");
+  if (l0 == 240 && l1 == 0)
+    return os << _("Tracking");
+  return os << value;
 }  // PanasonicMakerNote::print0x000f
 
 // tag White balance bias
@@ -619,37 +617,27 @@ std::ostream& PanasonicMakerNote::print0x0029(std::ostream& os, const Value& val
 
 // baby age
 std::ostream& PanasonicMakerNote::print0x0033(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.toString() == "9999:99:99 00:00:00") {
-    os << N_("not set");
-  } else {
-    os << value;
-  }
-  return os;
+  if (value.toString() == "9999:99:99 00:00:00")
+    return os << N_("not set");
+  return os << value;
 }  // PanasonicMakerNote::print0x0033
 
 // Travel days
 std::ostream& PanasonicMakerNote::print0x0036(std::ostream& os, const Value& value, const ExifData*) {
   if (value.toInt64() == 65535)
-    os << N_("not set");
-  else
-    os << value;
-  return os;
+    return os << N_("not set");
+  return os << value;
 }  // PanasonicMakerNote::print0x0036
 
 // Program ISO
 std::ostream& PanasonicMakerNote::print0x003c(std::ostream& os, const Value& value, const ExifData*) {
   switch (value.toInt64()) {
     case 65534:
-      os << N_("Intelligent ISO");
-      break;
+      return os << N_("Intelligent ISO");
     case 65535:
-      os << N_("n/a");
-      break;
-    default:
-      os << value;
-      break;
+      return os << N_("n/a");
   }
-  return os;
+  return os << value;
 }  // PanasonicMakerNote::print0x003c
 
 std::ostream& PanasonicMakerNote::printPanasonicText(std::ostream& os, const Value& value, const ExifData*) {
@@ -669,10 +657,8 @@ std::ostream& PanasonicMakerNote::printPanasonicText(std::ostream& os, const Val
 // Manometer Pressure
 std::ostream& PanasonicMakerNote::printPressure(std::ostream& os, const Value& value, const ExifData*) {
   if (value.toInt64() == 65535)
-    os << N_("infinite");
-  else
-    os << value << N_(" hPa");
-  return os;
+    return os << N_("infinite");
+  return os << value << N_(" hPa");
 }  // PanasonicMakerNote::printPressure
 
 std::ostream& PanasonicMakerNote::printAccelerometer(std::ostream& os, const Value& value, const ExifData*) {

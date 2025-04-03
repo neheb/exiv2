@@ -99,13 +99,11 @@ static std::ostream& printFujiWhiteBalanceFineTune(std::ostream& os, const Value
       if (longValue->toInt64(0) % 20 == 0 && longValue->toInt64(1) % 20 == 0) {
         auto redShift = longValue->toInt64(0) / 20;
         auto blueShift = longValue->toInt64(1) / 20;
-        os << "R: " << redShift << " B: " << blueShift;
-        return os;
+        return os << "R: " << redShift << " B: " << blueShift;
       }
     }
   }
-  os << "(" << value << ")";
-  return os;
+  return os << "(" << value << ")";
 }
 
 //! NoiseReduction, tag 0x100b
@@ -229,8 +227,7 @@ static std::ostream& printFujiDigitalZoom(std::ostream& os, const Value& value, 
   if (value.typeId() == unsignedLong && value.size() == 4) {
     os << (value.toFloat() / 8);
   }
-  os << "(" << value << ")";
-  return os;
+  return os << "(" << value << ")";
 }
 
 //! GrainEffectRoughness, tag 0x104c
@@ -254,11 +251,9 @@ constexpr TagDetails fujiCropMode[] = {
 static std::ostream& printFujiMonochromaticColor(std::ostream& os, const Value& value, const ExifData*) {
   if (value.size() == 1) {
     auto v = static_cast<std::int8_t>(value.toInt64());
-    os << (v > 0 ? "+" : "") << static_cast<int>(v);
-  } else {
-    os << "(" << value << ")";
+    return os << (v > 0 ? "+" : "") << static_cast<int>(v);
   }
-  return os;
+  return os << "(" << value << ")";
 }
 
 //! ShutterType, tag 0x1050

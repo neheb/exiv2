@@ -5239,11 +5239,9 @@ std::ostream& operator<<(std::ostream& os, const XmpPropertyInfo& property) {
   }
   escapedDesc.push_back('"');
 
-  os << stringFormat("{},{},{},{},{},{}\n", property.name_, property.title_, property.xmpValueType_,
-                     TypeInfo::typeName(property.typeId_),
-                     (property.xmpCategory_ == xmpExternal ? "External" : "Internal"), escapedDesc);
-
-  return os;
+  return os << stringFormat("{},{},{},{},{},{}\n", property.name_, property.title_, property.xmpValueType_,
+                            TypeInfo::typeName(property.typeId_),
+                            (property.xmpCategory_ == xmpExternal ? "External" : "Internal"), escapedDesc);
 }
 //! @endcond
 

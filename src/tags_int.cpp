@@ -2636,12 +2636,9 @@ std::ostream& printInt64(std::ostream& os, const Value& value, const ExifData*) 
 
 std::ostream& printFloat(std::ostream& os, const Value& value, const ExifData*) {
   Rational r = value.toRational();
-  if (r.second != 0) {
-    os << value.toFloat();
-  } else {
-    os << "(" << value << ")";
-  }
-  return os;
+  if (r.second != 0)
+    return os << value.toFloat();
+  return os << "(" << value << ")";
 }  // printFloat
 
 std::ostream& printDegrees(std::ostream& os, const Value& value, const ExifData*) {
@@ -2718,8 +2715,7 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
       (value.toRational(1).first != 0 && value.toRational(1).second == 0) ||
       (value.toRational(2).first != 0 && value.toRational(2).second == 0) ||
       (value.toRational(3).first != 0 && value.toRational(3).second == 0)) {
-    os << "(" << value << ")";
-    return os;
+    return os << "(" << value << ")";
   }
   // values numerically are ok, so they can be converted
   // here first and second can be zero, so initialise float with 0.0f
@@ -2737,16 +2733,12 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
     fNumber2 = value.toFloat(3);
 
   // first value must not be bigger than second
-  if ((focalLength1 > focalLength2 && focalLength2 > 0.0f) || (fNumber1 > fNumber2 && fNumber2 > 0.0f)) {
-    os << "(" << value << ")";
-    return os;
-  }
+  if ((focalLength1 > focalLength2 && focalLength2 > 0.0f) || (fNumber1 > fNumber2 && fNumber2 > 0.0f))
+    return os << "(" << value << ")";
 
   // no lens specification available
-  if (focalLength1 == 0.0f && focalLength2 == 0.0f && fNumber1 == 0.0f && fNumber2 == 0.0f) {
-    os << "n/a";
-    return os;
-  }
+  if (focalLength1 == 0.0f && focalLength2 == 0.0f && fNumber1 == 0.0f && fNumber2 == 0.0f)
+    return os << "n/a";
 
   // lens specification available - at least parts
   if (focalLength1 == 0.0f)
@@ -2782,17 +2774,14 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
 }
 
 std::ostream& print0x0000(std::ostream& os, const Value& value, const ExifData*) {
-  if (value.size() != 4 || value.typeId() != unsignedByte) {
+  if (value.size() != 4 || value.typeId() != unsignedByte)
     return os << value;
-  }
 
   for (int i = 0; i < 3; i++) {
     os << value.toInt64(i);
     os << ".";
   }
-  os << value.toInt64(3);
-
-  return os;
+  return os << value.toInt64(3);
 }
 
 std::ostream& print0x0005(std::ostream& os, const Value& value, const ExifData* metadata) {
@@ -3173,11 +3162,9 @@ std::ostream& print0xa404(std::ostream& os, const Value& value, const ExifData*)
 }
 
 std::ostream& print0xa405(std::ostream& os, const Value& value, const ExifData*) {
-  if (auto length = value.toInt64(); length == 0)
-    os << _("Unknown");
-  else
-    os << length << ".0 mm";
-  return os;
+  if (auto length = value.toInt64(); length != 0)
+    return os << length << ".0 mm";
+  return os << _("Unknown");
 }
 
 //! SceneCaptureType, tag 0xa406

@@ -298,66 +298,56 @@ constexpr TagDetails minoltaFlashMeteringStd[] = {
 
 std::ostream& MinoltaMakerNote::printMinoltaExposureSpeedStd(std::ostream& os, const Value& value, const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
-  os << (value.toInt64() / 8) - 1;
-  return os;
+  return os << (value.toInt64() / 8) - 1;
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaExposureTimeStd(std::ostream& os, const Value& value, const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
-  os << (value.toInt64() / 8) - 6;
-  return os;
+  return os << (value.toInt64() / 8) - 6;
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaFNumberStd(std::ostream& os, const Value& value, const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
-  os << (value.toInt64() / 8) - 1;
-  return os;
+  return os << (value.toInt64() / 8) - 1;
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaExposureCompensationStd(std::ostream& os, const Value& value,
                                                                     const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
-  os << value.toInt64() / 256;
-  return os;
+  return os << value.toInt64() / 256;
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaFocalLengthStd(std::ostream& os, const Value& value, const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
-  os << (value.toInt64() / 3) - 2;
-  return os;
+  return os << (value.toInt64() / 3) - 2;
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaDateStd(std::ostream& os, const Value& value, const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
   auto val = value.toInt64();
-  os << stringFormat("{}:{:02}:{:02}", val / 65536, (val % 65536) / 256, val % 256);
-  return os;
+  return os << stringFormat("{}:{:02}:{:02}", val / 65536, (val % 65536) / 256, val % 256);
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaTimeStd(std::ostream& os, const Value& value, const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
   auto val = value.toInt64();
-  os << stringFormat("{:02}:{:02}:{:02}", val / 65536, (val % 65536) / 256, val % 256);
-  return os;
+  return os << stringFormat("{:02}:{:02}:{:02}", val / 65536, (val % 65536) / 256, val % 256);
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaFlashExposureCompStd(std::ostream& os, const Value& value,
                                                                  const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
-  os << (value.toInt64() - 6) / 3;
-  return os;
+  return os << (value.toInt64() - 6) / 3;
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaWhiteBalanceStd(std::ostream& os, const Value& value, const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
-  os << value.toInt64() / 256;
-  return os;
+  return os << value.toInt64() / 256;
 }
 
 std::ostream& MinoltaMakerNote::printMinoltaBrightnessStd(std::ostream& os, const Value& value, const ExifData*) {
   // From the PHP JPEG Metadata Toolkit
-  os << (value.toInt64() / 8) - 6;
-  return os;
+  return os << (value.toInt64() / 8) - 6;
 }
 
 // Minolta Standard Camera Settings Tag Info (Old and New)
