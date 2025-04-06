@@ -36,11 +36,8 @@ class EXIV2API BasicIo {
 
   //! @name Creators
   //@{
-  BasicIo() = default;
   //! Destructor
-  virtual ~BasicIo() = default;
-  BasicIo(const BasicIo&) = delete;
-  BasicIo& operator=(const BasicIo&) = delete;
+  virtual ~BasicIo();
   //@}
 
   //! @name Manipulators
@@ -471,6 +468,12 @@ class EXIV2API FileIo : public BasicIo {
   void populateFakeData() override;
   //@}
 
+  // NOT IMPLEMENTED
+  //! Copy constructor
+  FileIo(const FileIo&) = delete;
+  //! Assignment operator
+  FileIo& operator=(const FileIo&) = delete;
+
  private:
   // Pimpl idiom
   class Impl;
@@ -648,6 +651,12 @@ class EXIV2API MemIo : public BasicIo {
 
   //@}
 
+  // NOT IMPLEMENTED
+  //! Copy constructor
+  MemIo(const MemIo&) = delete;
+  //! Assignment operator
+  MemIo& operator=(const MemIo&) = delete;
+
  private:
   // Pimpl idiom
   class Impl;
@@ -680,6 +689,9 @@ class EXIV2API XPathIo : public FileIo {
   //! Destructor. Releases all managed memory and removes the temp file.
   ~XPathIo() override;
   //@}
+
+  XPathIo(const XPathIo&) = delete;
+  XPathIo& operator=(const XPathIo&) = delete;
 
   //! @name Manipulators
   //@{
@@ -717,8 +729,12 @@ class EXIV2API XPathIo : public FileIo {
 class EXIV2API RemoteIo : public BasicIo {
  public:
   //! Destructor. Releases all managed memory.
+  RemoteIo();
   ~RemoteIo() override;
   //@}
+
+  RemoteIo(const RemoteIo&) = delete;
+  RemoteIo& operator=(const RemoteIo&) = delete;
 
   //! @name Manipulators
   //@{
