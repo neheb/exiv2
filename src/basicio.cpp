@@ -44,10 +44,13 @@ namespace fs = std::filesystem;
 #endif
 
 #ifndef _WIN32
+#define _isatty isatty
 #define _fileno fileno
 #endif
 
 namespace Exiv2 {
+
+BasicIo::~BasicIo() = default;
 
 void BasicIo::readOrThrow(byte* buf, size_t rcount, ErrorCode err) {
   const size_t nread = read(buf, rcount);
@@ -890,7 +893,7 @@ std::string XPathIo::writeDataToFile(const std::string& orgPath) {
   auto path = stringFormat("{}{}", timestamp, XPathIo::TEMP_FILE_EXT);
 
   if (prot == pStdin) {
-    if (isatty(_fileno(stdin)))
+    if (_isatty(_fileno(stdin)))
       throw Error(ErrorCode::kerInputDataReadFailed);
 #ifdef _WIN32
     // convert stdin to binary
@@ -1029,6 +1032,8 @@ size_t RemoteIo::Impl::populateBlocks(size_t lowBlock, size_t highBlock) {
 
   return rcount;
 }
+
+RemoteIo::RemoteIo() = default;
 
 RemoteIo::~RemoteIo() {
   if (p_) {
