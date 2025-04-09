@@ -1396,11 +1396,9 @@ size_t TiffImageEntry::doSizeImage() const {
   if (!pValue())
     return 0;
   auto len = pValue()->sizeDataArea();
-  if (len == 0) {
-    for (const auto& [_, off] : strips_) {
-      len += off;
-    }
-  }
+  if (len == 0)
+    return std::transform_reduce(strips_.begin(), strips_.end(), len, std::plus<>(),
+                                 [](const auto& s) { return s.second; });
   return len;
 }  // TiffImageEntry::doSizeImage
 
