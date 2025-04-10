@@ -178,9 +178,8 @@ constexpr TagDetails exifUnit[] = {
 
 //! Orientation, tag 0x0112
 constexpr TagDetails exifOrientation[] = {
-    {1, N_("top, left")},     {2, N_("top, right")},   {3, N_("bottom, right")},
-    {4, N_("bottom, left")},  {5, N_("left, top")},    {6, N_("right, top")},
-    {7, N_("right, bottom")}, {8, N_("left, bottom")}, {8, N_("left, bottom")}  // To silence compiler warning
+    {1, N_("top, left")}, {2, N_("top, right")}, {3, N_("bottom, right")}, {4, N_("bottom, left")},
+    {5, N_("left, top")}, {6, N_("right, top")}, {7, N_("right, bottom")}, {8, N_("left, bottom")},
 };
 
 //! PlanarConfiguration, tag 0x011c
@@ -297,9 +296,10 @@ constexpr TagDetails exifThresholding[] = {
 
 //! SampleFormat, tag 0x0153
 constexpr TagDetails exifSampleFormat[] = {
-    {1, N_("Unsigned integer data")},    {2, N_("Two's complement signed integer data")},
-    {3, N_("IEEE floating point data")}, {4, N_("Undefined data format")},
-    {4, N_("Undefined data format")},  // To silence compiler warning
+    {1, N_("Unsigned integer data")},
+    {2, N_("Two's complement signed integer data")},
+    {3, N_("IEEE floating point data")},
+    {4, N_("Undefined data format")},
 };
 
 //! Indexed, tag 0x015a
@@ -2546,7 +2546,7 @@ const TagInfo* tagInfo(const std::string& tagName, IfdId ifdId) {
 
 IfdId groupId(const std::string& groupName) {
   if (auto ii = Exiv2::find(groupInfo, groupName))
-    return static_cast<IfdId>(ii->ifdId_);
+    return IfdId{ii->ifdId_};
   return IfdId::ifdIdNotSet;
 }
 
@@ -2737,7 +2737,8 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
     fNumber2 = value.toFloat(3);
 
   // first value must not be bigger than second
-  if ((focalLength1 > focalLength2 && focalLength2 > 0.0f) || (fNumber1 > fNumber2 && fNumber2 > 0.0f)) {
+  if ((std::isgreater(focalLength1, focalLength2) && std::isgreater(focalLength2, 0.0f)) ||
+      (std::isgreater(fNumber1, fNumber2) && std::isgreater(fNumber2, 0.0f))) {
     os << "(" << value << ")";
     return os;
   }
@@ -2749,31 +2750,31 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
   }
 
   // lens specification available - at least parts
-  if (focalLength1 == 0.0f)
-    os << "n/a";
-  else
+  if (std::isgreater(focalLength1, 0.0f))
     os << std::setprecision(5) << focalLength1;
+  else
+    os << "n/a";
   if (focalLength1 != focalLength2) {
-    if (focalLength2 == 0.0f)
-      os << "-n/a ";
-    else
+    if (std::isgreater(focalLength2, 0.0f))
       os << "-" << std::setprecision(5) << focalLength2;
+    else
+      os << "-n/a ";
   }
   os << "mm";
   std::ostringstream oss;
   oss.copyfmt(os);
 
-  if (fNumber1 > 0.0f || fNumber2 > 0.0f) {
+  if (std::isgreater(fNumber1, 0.0f) || std::isgreater(fNumber2, 0.0f)) {
     os << " F";
-    if (fNumber1 == 0.0f)
-      os << " n/a";
-    else
+    if (std::isgreater(fNumber1, 0.0f))
       os << std::setprecision(2) << fNumber1;
+    else
+      os << " n/a";
     if (fNumber1 != fNumber2) {
-      if (fNumber2 == 0.0f)
-        os << "-n/a";
-      else
+      if (std::isgreater(fNumber2, 0.0f))
         os << "-" << std::setprecision(2) << fNumber2;
+      else
+        os << "-n/a";
     }
   }
   os.copyfmt(oss);
@@ -3014,7 +3015,7 @@ std::ostream& print0x9202(std::ostream& os, const Value& value, const ExifData*)
 std::ostream& print0x9204(std::ostream& os, const Value& value, const ExifData*) {
   Rational bias = value.toRational();
 
-  if (bias.first == 0 || bias.first == static_cast<int32_t>(0x80000000)) {
+  if (bias.first == 0 || bias.first == std::numeric_limits<std::int32_t>::min()) {
     os << "0 EV";
   } else if (bias.second <= 0) {
     os << "(" << bias.first << "/" << bias.second << ")";
@@ -3054,7 +3055,7 @@ std::ostream& print0x9206(std::ostream& os, const Value& value, const ExifData*)
 constexpr TagDetails exifMeteringMode[] = {
     {0, N_("Unknown")}, {1, N_("Average")},    {2, N_("Center weighted average")},
     {3, N_("Spot")},    {4, N_("Multi-spot")}, {5, N_("Multi-segment")},
-    {6, N_("Partial")}, {255, N_("Other")},    {255, N_("Other")}  // To silence compiler warning
+    {6, N_("Partial")}, {255, N_("Other")},
 };
 
 std::ostream& print0x9207(std::ostream& os, const Value& value, const ExifData* metadata) {
@@ -3186,7 +3187,6 @@ constexpr TagDetails exifSceneCaptureType[] = {
     {1, N_("Landscape")},
     {2, N_("Portrait")},
     {3, N_("Night scene")},
-    {3, N_("Night scene")}  // To silence compiler warning
 };
 
 std::ostream& print0xa406(std::ostream& os, const Value& value, const ExifData* metadata) {
@@ -3220,7 +3220,6 @@ constexpr TagDetails exifSubjectDistanceRange[] = {
     {1, N_("Macro")},
     {2, N_("Close view")},
     {3, N_("Distant view")},
-    {3, N_("Distant view")}  // To silence compiler warning
 };
 
 std::ostream& print0xa40c(std::ostream& os, const Value& value, const ExifData* metadata) {

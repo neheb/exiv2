@@ -42,6 +42,7 @@
 #define _setmode(a, b) \
   do {                 \
   } while (false)
+#define _fileno fileno
 #endif
 
 namespace fs = std::filesystem;
@@ -184,7 +185,7 @@ static int setModeAndPrintStructure(Exiv2::PrintStructureOption option, const st
       }
     }
   } else {
-    _setmode(fileno(stdout), O_BINARY);
+    _setmode(_fileno(stdout), O_BINARY);
     result = printStructure(std::cout, option, path);
   }
 
@@ -776,7 +777,7 @@ int Extract::run(const std::string& path) {
 
     bool bStdout = (Params::instance().target_ & Params::ctStdInOut) != 0;
     if (bStdout) {
-      _setmode(fileno(stdout), _O_BINARY);
+      _setmode(_fileno(stdout), _O_BINARY);
     }
 
     if (Params::instance().target_ & Params::ctThumb) {
@@ -1013,10 +1014,7 @@ int Insert::insertXmpPacket(const std::string& path, const std::string& xmpPath)
 }  // Insert::insertXmpPacket
 
 int Insert::insertXmpPacket(const std::string& path, const Exiv2::DataBuf& xmpBlob, bool usePacket) {
-  std::string xmpPacket;
-  for (size_t i = 0; i < xmpBlob.size(); i++) {
-    xmpPacket += static_cast<char>(xmpBlob.read_uint8(i));
-  }
+  std::string xmpPacket(xmpBlob.cbegin(), xmpBlob.cend());
   auto image = Exiv2::ImageFactory::open(path);
   image->readMetadata();
   image->clearXmpData();
@@ -1577,7 +1575,7 @@ int Timestamp::read(const std::string& path) {
 int Timestamp::read(tm* tm) {
   int rc = 1;
   time_t t = mktime(tm);  // interpret tm according to current timezone settings
-  if (t != static_cast<time_t>(-1)) {
+  if (t != time_t{-1}) {
     rc = 0;
     actime_ = t;
     modtime_ = t;
@@ -1635,7 +1633,7 @@ int str2Tm(const std::string& timeStr, tm* tm) {
   tm->tm_sec = static_cast<decltype(tm->tm_sec)>(tmp);
 
   // Conversions to set remaining fields of the tm structure
-  if (mktime(tm) == static_cast<time_t>(-1))
+  if (mktime(tm) == time_t{-1})
     return 11;
 
   return 0;
@@ -1783,7 +1781,7 @@ int metacopy(const std::string& source, const std::string& tgt, Exiv2::ImageType
 
   // if we used a temporary target, copy it to stdout
   if (rc == 0 && bStdout) {
-    _setmode(fileno(stdout), O_BINARY);
+    _setmode(_fileno(stdout), O_BINARY);
     if (auto f = std::ifstream(target, std::ios::binary)) {
       std::vector<char> buffer(8 * 1024);
 

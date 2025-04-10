@@ -659,8 +659,8 @@ constexpr TagDetails olympusEqFlashType[] = {
 
 //! OlympusEq FlashModel, tag 0x1001
 constexpr TagDetails olympusEqFlashModel[] = {
-    {0, N_("None")}, {1, "FL-20"},  {2, "FL-50"}, {3, "RF-11"},    {4, "TF-22"},   {5, "FL-36"},
-    {6, "FL-50R"},   {7, "FL-36R"}, {9, "FL-14"}, {11, "FL-600R"}, {11, "FL-600R"}  // To silence compiler warning
+    {0, N_("None")}, {1, "FL-20"},  {2, "FL-50"},  {3, "RF-11"}, {4, "TF-22"},
+    {5, "FL-36"},    {6, "FL-50R"}, {7, "FL-36R"}, {9, "FL-14"}, {11, "FL-600R"},
 };
 
 constexpr TagInfo OlympusMakerNote::tagInfoEq_[] = {
@@ -1280,9 +1280,9 @@ std::ostream& OlympusMakerNote::print0x0204(std::ostream& os, const Value& value
     return os << "(" << value << ")";
   }
   float f = value.toFloat();
-  if (f == 0.0F || f == 1.0F)
-    return os << _("None");
-  return os << stringFormat("{:.1f}x", f);
+  if (std::isgreater(f, 1.0F))
+    return os << stringFormat("{:.1f}x", f);
+  return os << _("None");
 }  // OlympusMakerNote::print0x0204
 
 std::ostream& OlympusMakerNote::print0x1015(std::ostream& os, const Value& value, const ExifData*) {
@@ -1537,10 +1537,7 @@ std::ostream& OlympusMakerNote::printEq0x0301(std::ostream& os, const Value& val
 //! OlympusCs FocusMode, tag 0x0301
 // (1 or 2 values)
 std::ostream& OlympusMakerNote::printCs0x0301(std::ostream& os, const Value& value, const ExifData*) {
-  struct mode {
-    uint16_t tag;
-    const char* name;
-  };
+  using mode = std::pair<uint16_t, const char*>;
   static constexpr mode focusModes0[] = {
       {0, N_("Single AF")},     {1, N_("Sequential shooting AF")},
       {2, N_("Continuous AF")}, {3, N_("Multi AF")},
@@ -1640,18 +1637,12 @@ std::ostream& OlympusMakerNote::print0x0305(std::ostream& os, const Value& value
 
 // Olympus FocusInfo tag 0x0308 AFPoint
 std::ostream& OlympusMakerNote::print0x0308(std::ostream& os, const Value& value, const ExifData* metadata) {
-  static constexpr struct point {
-    uint16_t p;
-    const char* name;
-  } afPoints[] = {
+  static constexpr std::pair<uint16_t, const char*> afPoints[] = {
       {0, N_("Left (or n/a)")}, {1, N_("Center (horizontal)")}, {2, N_("Right")}, {3, N_("Center (vertical)")},
       {255, N_("None")},
   };
 
-  static constexpr struct pointE3 {
-    byte p;
-    const char* name;
-  } afPointsE3[] = {
+  static constexpr std::pair<byte, const char*> afPointsE3[] = {
       {0x00, N_("None")},
       {0x01, N_("Top-left (horizontal)")},
       {0x02, N_("Top-center (horizontal)")},

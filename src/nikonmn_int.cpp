@@ -1085,12 +1085,12 @@ static void printFlashCompensationValue(std::ostream& os, const unsigned char va
     ...
     255 = "+0.2"
      */
-    float output = 0.0;
+    auto output = 0.0f;
     if (value < 128) {
       if (value != 0)
-        output = static_cast<float>(value) * static_cast<float>(-1.0);
+        output = static_cast<float>(value) * -1.0f;
     } else {
-      output = static_cast<float>(256.0) - static_cast<float>(value);
+      output = 256.0f - static_cast<float>(value);
     }
     os.precision(1);
     if (value != 0)
@@ -3855,11 +3855,7 @@ std::ostream& Nikon3MakerNote::printLensId4ZMount(std::ostream& os, const Value&
   }
 
   // cf. https://github.com/exiftool/exiftool/blob/13.16/lib/Image/ExifTool/Nikon.pm#L5668
-  static constexpr struct lens {
-    uint16_t l;
-    const char* vendor;
-    const char* name;
-  } zmountlens[] = {
+  static constexpr std::tuple<uint16_t, const char*, const char*> zmountlens[] = {
       {1, "Nikon", "Nikkor Z 24-70mm f/4 S"},
       {2, "Nikon", "Nikkor Z 14-30mm f/4 S"},
       {4, "Nikon", "Nikkor Z 35mm f/1.8 S"},

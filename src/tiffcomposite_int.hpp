@@ -72,7 +72,7 @@ class TiffPathItem {
   //@{
   //! Return the tag corresponding to the extended tag
   [[nodiscard]] uint16_t tag() const {
-    return static_cast<uint16_t>(extendedTag_ & 0xffff);
+    return static_cast<uint16_t>(extendedTag_);
   }
   //! Return the extended tag (32 bit so that it can contain special tags)
   [[nodiscard]] uint32_t extendedTag() const {
@@ -163,8 +163,6 @@ class TiffComponent {
   }
   //! Virtual destructor.
   virtual ~TiffComponent() = default;
-  TiffComponent(const TiffComponent&) = default;
-  TiffComponent& operator=(const TiffComponent&) = default;
   //@}
 
   //! @name Manipulators
@@ -352,7 +350,7 @@ struct TiffMappingInfo {
   bool operator==(const Key& key) const;
   //! Return the tag corresponding to the extended tag
   [[nodiscard]] uint16_t tag() const {
-    return static_cast<uint16_t>(extendedTag_ & 0xffff);
+    return static_cast<uint16_t>(extendedTag_);
   }
 
   // DATA
@@ -567,12 +565,7 @@ class TiffEntryBase : public TiffComponent {
  */
 class TiffEntry : public TiffEntryBase {
  public:
-  //! @name Creators
-  //@{
-  //! Constructor
-  constexpr TiffEntry(uint16_t tag, IfdId group) : TiffEntryBase(tag, group) {
-  }
-  //@}
+  using TiffEntryBase::TiffEntryBase;
 
  protected:
   //! @name Manipulators

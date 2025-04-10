@@ -15,7 +15,6 @@
 #include "utils.hpp"
 
 // + standard includes
-#include <array>
 #include <iostream>
 
 #ifdef EXV_ENABLE_FILESYSTEM
@@ -979,8 +978,10 @@ int sony2010eSelector(uint16_t /*tag*/, const byte* /*pData*/, size_t /*size*/, 
 int sony2FpSelector(uint16_t /*tag*/, const byte* /*pData*/, size_t /*size*/, TiffComponent* pRoot) {
   // Not valid for models beginning
   std::string model = getExifModel(pRoot);
-  const std::array strs{"SLT-", "HV", "ILCA-"};
-  return std::any_of(strs.begin(), strs.end(), [&model](auto m) { return model.starts_with(m); }) ? -1 : 0;
+  for (auto str : {"SLT-", "HV", "ILCA-"})
+    if (model.starts_with(str))
+      return -1;
+  return 0;
 }
 
 int sonyMisc2bSelector(uint16_t /*tag*/, const byte* /*pData*/, size_t /*size*/, TiffComponent* pRoot) {
@@ -1092,7 +1093,7 @@ void ncrypt(Exiv2::byte* pData, uint32_t size, uint32_t count, uint32_t serial) 
   };
   Exiv2::byte key = 0;
   for (int i = 0; i < 4; ++i) {
-    key ^= (count >> (i * 8)) & 0xff;
+    key ^= static_cast<Exiv2::byte>(count >> (i * 8));
   }
   Exiv2::byte ci = xlat[0][serial & 0xff];
   Exiv2::byte cj = xlat[1][key];

@@ -415,9 +415,8 @@ constexpr TagDetails pentaxWhiteBalanceMode[] = {
 
 //! Saturation, tag 0x001f
 constexpr TagDetails pentaxSaturation[] = {
-    {0, N_("Low")},      {1, N_("Normal")},   {2, N_("High")},      {3, N_("Med Low")},
-    {4, N_("Med High")}, {5, N_("Very Low")}, {6, N_("Very High")}, {7, N_("-4")},
-    {8, N_("+4")},       {65535, N_("None")}, {65535, N_("None")}  // To silence compiler warning
+    {0, N_("Low")},      {1, N_("Normal")},    {2, N_("High")}, {3, N_("Med Low")}, {4, N_("Med High")},
+    {5, N_("Very Low")}, {6, N_("Very High")}, {7, N_("-4")},   {8, N_("+4")},      {65535, N_("None")},
 };
 
 //! Contrast, tag 0x0020
@@ -959,7 +958,7 @@ std::ostream& PentaxMakerNote::printBracketing(std::ostream& os, const Value& va
       os << _("No extended bracketing");
     } else {
       auto type = l1 >> 8;
-      auto range = l1 & 0xff;
+      auto range = static_cast<byte>(l1);
       switch (type) {
         case 1:
           os << _("WB-BA");

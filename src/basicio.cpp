@@ -43,6 +43,11 @@
 namespace fs = std::filesystem;
 #endif
 
+#ifndef _WIN32
+#define _isatty isatty
+#define _fileno fileno
+#endif
+
 namespace Exiv2 {
 
 BasicIo::~BasicIo() = default;
@@ -86,7 +91,6 @@ class FileIo::Impl {
 #endif
   byte* pMappedArea_{};    //!< Pointer to the memory-mapped area
   size_t mappedLength_{};  //!< Size of the memory-mapped area
-  bool isMalloced_{};      //!< Is the mapped area allocated?
   bool isWriteable_{};     //!< Can the mapped area be written to?
   // TYPES
   //! Simple struct stat wrapper for internal use
@@ -174,15 +178,13 @@ int FileIo::Impl::switchMode(OpMode opMode) {
   openMode_ = "r+b";
   opMode_ = opSeek;
 #ifdef _WIN32
-  fp_ = _wfopen(wpath_.c_str(), L"r+b");
-#else
-  fp_ = std::fopen(path_.c_str(), openMode_.c_str());
-#endif
-  if (!fp_)
+  if (_wfopen_s(&fp_, wpath_.c_str(), L"r+b"))
     return 1;
-#ifdef _WIN32
   return _fseeki64(fp_, offset, SEEK_SET);
 #else
+  fp_ = std::fopen(path_.c_str(), openMode_.c_str());
+  if (!fp_)
+    return 1;
   return fseeko(fp_, offset, SEEK_SET);
 #endif
 }  // FileIo::Impl::switchMode
@@ -232,10 +234,7 @@ int FileIo::munmap() {
       seek(0, BasicIo::beg);
       write(p_->pMappedArea_, p_->mappedLength_);
     }
-    if (p_->isMalloced_) {
-      delete[] p_->pMappedArea_;
-      p_->isMalloced_ = false;
-    }
+    delete[] p_->pMappedArea_;
 #endif
   }
   if (p_->isWriteable_) {
@@ -262,7 +261,7 @@ byte* FileIo::mmap(bool isWriteable) {
   if (p_->isWriteable_) {
     prot |= PROT_WRITE;
   }
-  void* rc = ::mmap(nullptr, p_->mappedLength_, prot, MAP_SHARED, fileno(p_->fp_), 0);
+  void* rc = ::mmap(nullptr, p_->mappedLength_, prot, MAP_SHARED, _fileno(p_->fp_), 0);
   if (MAP_FAILED == rc) {
     throw Error(ErrorCode::kerCallFailed, path(), strError(), "mmap");
   }
@@ -283,7 +282,7 @@ byte* FileIo::mmap(bool isWriteable) {
     flProtect = PAGE_READWRITE;
   }
   HANDLE hPh = GetCurrentProcess();
-  auto hFd = reinterpret_cast<HANDLE>(_get_osfhandle(fileno(p_->fp_)));
+  auto hFd = reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(p_->fp_)));
   if (hFd == INVALID_HANDLE_VALUE) {
     throw Error(ErrorCode::kerCallFailed, path(), "MSG1", "_get_osfhandle");
   }
@@ -315,7 +314,6 @@ byte* FileIo::mmap(bool isWriteable) {
     throw Error(ErrorCode::kerCallFailed, path(), strError(), "FileIo::mmap");
   }
   p_->pMappedArea_ = buf;
-  p_->isMalloced_ = true;
 #endif
   return p_->pMappedArea_;
 }
@@ -526,12 +524,13 @@ int FileIo::open(const std::string& mode) {
 #ifdef _WIN32
   wchar_t wmode[10];
   MultiByteToWideChar(CP_UTF8, 0, mode.c_str(), -1, wmode, 10);
-  p_->fp_ = _wfopen(p_->wpath_.c_str(), wmode);
+  if (_wfopen_s(&p_->fp_, p_->wpath_.c_str(), wmode))
+    return 1;
 #else
   p_->fp_ = ::fopen(path().c_str(), mode.c_str());
-#endif
   if (!p_->fp_)
     return 1;
+#endif
   return 0;
 }
 
@@ -626,27 +625,15 @@ class BlockMap {
  public:
   //! the status of the block.
   enum blockType_e { bNone, bKnown, bMemory };
-  //! @name Creators
-  //@{
-  //! Default constructor. the init status of the block is bNone.
-  BlockMap() = default;
-
-  //! Destructor. Releases all managed memory.
-  ~BlockMap() {
-    delete[] data_;
-  }
-
-  BlockMap(const BlockMap&) = delete;
-  BlockMap& operator=(const BlockMap&) = delete;
 
   //! @brief Populate the block.
   //! @param source The data populate to the block
   //! @param num The size of data
   void populate(const byte* source, size_t num) {
     size_ = num;
-    data_ = new byte[size_];
+    data_ = std::make_unique<byte[]>(size_);
     type_ = bMemory;
-    std::memcpy(data_, source, size_);
+    std::memcpy(data_.get(), source, size_);
   }
 
   /*!
@@ -669,7 +656,7 @@ class BlockMap {
   }
 
   [[nodiscard]] byte* getData() const {
-    return data_;
+    return data_.get();
   }
 
   [[nodiscard]] size_t getSize() const {
@@ -678,7 +665,7 @@ class BlockMap {
 
  private:
   blockType_e type_{bNone};
-  byte* data_{nullptr};
+  std::unique_ptr<byte[]> data_;
   size_t size_{0};
 };
 
@@ -935,7 +922,7 @@ std::string XPathIo::writeDataToFile(const std::string& orgPath) {
   auto path = stringFormat("{}{}", timestamp, XPathIo::TEMP_FILE_EXT);
 
   if (prot == pStdin) {
-    if (isatty(fileno(stdin)))
+    if (_isatty(_fileno(stdin)))
       throw Error(ErrorCode::kerInputDataReadFailed);
 #ifdef _WIN32
     // convert stdin to binary
@@ -997,7 +984,6 @@ class RemoteIo::Impl {
   std::unique_ptr<BlockMap[]> blocksMap_;  //!< An array contains all blocksMap
   size_t size_{0};                         //!< The file size
   size_t idx_{0};                          //!< Index into the memory area
-  bool isMalloced_{false};                 //!< Was the blocksMap_ allocated?
   bool eof_{false};                        //!< EOF indicator
   Protocol protocol_;                      //!< the protocol of url
   size_t totalRead_{0};                    //!< bytes requested from host
@@ -1087,7 +1073,7 @@ RemoteIo::~RemoteIo() {
 int RemoteIo::open() {
   close();  // reset the IO position
   bigBlock_ = nullptr;
-  if (!p_->isMalloced_) {
+  if (!p_->blocksMap_) {
     const auto length = p_->getFileLength();
     if (length < 0) {  // unable to get the length of remote file, get the whole file content.
       std::string data;
@@ -1095,7 +1081,6 @@ int RemoteIo::open() {
       p_->size_ = data.length();
       size_t nBlocks = (p_->size_ + p_->blockSize_ - 1) / p_->blockSize_;
       p_->blocksMap_ = std::make_unique<BlockMap[]>(nBlocks);
-      p_->isMalloced_ = true;
       auto source = reinterpret_cast<byte*>(const_cast<char*>(data.c_str()));
       size_t remain = p_->size_;
       size_t iBlock = 0;
@@ -1113,14 +1098,13 @@ int RemoteIo::open() {
       p_->size_ = static_cast<size_t>(length);
       size_t nBlocks = (p_->size_ + p_->blockSize_ - 1) / p_->blockSize_;
       p_->blocksMap_ = std::make_unique<BlockMap[]>(nBlocks);
-      p_->isMalloced_ = true;
     }
   }
   return 0;  // means OK
 }
 
 int RemoteIo::close() {
-  if (p_->isMalloced_) {
+  if (p_->blocksMap_) {
     p_->eof_ = false;
     p_->idx_ = 0;
   }
@@ -1337,7 +1321,7 @@ size_t RemoteIo::size() const {
 }
 
 bool RemoteIo::isopen() const {
-  return p_->isMalloced_;
+  return p_->blocksMap_ != nullptr;
 }
 
 int RemoteIo::error() const {

@@ -1401,9 +1401,8 @@ constexpr TagDetails canonCsQuality[] = {
 
 //! FlashMode, tag 0x0004
 constexpr TagDetails canonCsFlashMode[] = {
-    {0, N_("Off")},          {1, N_("Auto")},      {2, N_("On")},
-    {3, N_("Red-eye")},      {4, N_("Slow sync")}, {5, N_("Auto + red-eye")},
-    {6, N_("On + red-eye")}, {16, N_("External")}, {16, N_("External")}  // To silence compiler warning
+    {0, N_("Off")},       {1, N_("Auto")},           {2, N_("On")},           {3, N_("Red-eye")},
+    {4, N_("Slow sync")}, {5, N_("Auto + red-eye")}, {6, N_("On + red-eye")}, {16, N_("External")},
 };
 
 //! DriveMode, tag 0x0005
@@ -1422,12 +1421,9 @@ constexpr TagDetails canonCsDriveMode[] = {
 
 //! FocusMode, tag 0x0007
 constexpr TagDetails canonCsFocusMode[] = {
-    {0, N_("One shot AF")},      {1, N_("AI servo AF")},
-    {2, N_("AI focus AF")},      {3, N_("Manual focus (3)")},
-    {4, N_("Single")},           {5, N_("Continuous")},
-    {6, N_("Manual focus (6)")}, {16, N_("Pan focus")},
-    {256, N_("AF + MF")},        {512, N_("Movie Snap Focus")},
-    {519, N_("Movie Servo AF")}, {519, N_("Movie Servo AF")}  // To silence compiler warning
+    {0, N_("One shot AF")}, {1, N_("AI servo AF")},        {2, N_("AI focus AF")},      {3, N_("Manual focus (3)")},
+    {4, N_("Single")},      {5, N_("Continuous")},         {6, N_("Manual focus (6)")}, {16, N_("Pan focus")},
+    {256, N_("AF + MF")},   {512, N_("Movie Snap Focus")}, {519, N_("Movie Servo AF")},
 };
 
 //! RecordMode, tag 0x0009
@@ -1536,7 +1532,10 @@ constexpr TagDetails canonCsEasyMode[] = {
 
 //! DigitalZoom, tag 0x000c
 constexpr TagDetails canonCsDigitalZoom[] = {
-    {0, N_("None")}, {1, "2x"}, {2, "4x"}, {3, N_("Other")}, {3, N_("Other")}  // To silence compiler warning
+    {0, N_("None")},
+    {1, "2x"},
+    {2, "4x"},
+    {3, N_("Other")},
 };
 
 //! Contrast, Saturation Sharpness, tags 0x000d, 0x000e, 0x000f
@@ -2798,7 +2797,7 @@ std::ostream& CanonMakerNote::printFocalLength(std::ostream& os, const Value& va
   auto pos = metadata->findKey(key);
   if (pos != metadata->end() && pos->value().count() >= 3 && pos->value().typeId() == unsignedShort) {
     float fu = pos->value().toFloat(2);
-    if (fu != 0.0F) {
+    if (std::isgreater(fu, 0.0F)) {
       return os << stringFormat("{:.1f} mm", value.toFloat(1) / fu);
     }
   }
@@ -3007,14 +3006,15 @@ std::ostream& CanonMakerNote::printCsLens(std::ostream& os, const Value& value, 
   }
 
   float fu = value.toFloat(2);
-  if (fu == 0.0F)
-    return os << value;
-  float len1 = value.toInt64(0) / fu;
-  float len2 = value.toInt64(1) / fu;
-  if (len1 == len2) {
-    return os << stringFormat("{:.1f} mm", len1);
+  if (std::isgreater(fu, 0.0F)) {
+    float len1 = value.toInt64(0) / fu;
+    float len2 = value.toInt64(1) / fu;
+    if (len1 == len2) {
+      return os << stringFormat("{:.1f} mm", len1);
+    }
+    return os << stringFormat("{:.1f} - {:.1f} mm", len2, len1);
   }
-  return os << stringFormat("{:.1f} - {:.1f} mm", len2, len1);
+  return os << value;
 }
 
 std::ostream& CanonMakerNote::printLe0x0000(std::ostream& os, const Value& value, const ExifData*) {

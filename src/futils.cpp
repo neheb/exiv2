@@ -59,11 +59,11 @@ namespace fs = std::filesystem;
 #endif
 
 namespace Exiv2 {
-constexpr std::array<const char*, 2> ENVARDEF{
+constexpr std::array ENVARDEF{
     "/exiv2.php",
     "40",
 };  /// @brief default URL for http exiv2 handler and time-out
-constexpr std::array<const char*, 2> ENVARKEY{
+constexpr std::array ENVARKEY{
     "EXIV2_HTTP_POST",
     "EXIV2_TIMEOUT",
 };  /// @brief request keys for http exiv2 handler and time-out
@@ -256,6 +256,12 @@ std::string strError() {
   if (os.empty()) {
     os = std::strerror(error);
   }
+#elif defined(_WIN32)
+  const size_t n = 1024;
+  char buf[n] = {};
+  const auto ret = strerror_s(buf, n, error);
+  Internal::enforce(ret != ERANGE, Exiv2::ErrorCode::kerCallFailed);
+  os = buf;
 #else
   os = std::strerror(error);
 #endif
