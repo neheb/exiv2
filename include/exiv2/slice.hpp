@@ -80,9 +80,6 @@ struct SliceBase {
  */
 template <template <typename data_type> class storage_type, typename data_type>
 struct ConstSliceBase : SliceBase {
-  using iterator = typename storage_type<data_type>::iterator;
-  using value_type = typename storage_type<data_type>::value_type;
-
   /*!
    * Default constructor, requires begin to be smaller than end,
    * otherwise an exception is thrown. Also forwards all parameters to
@@ -97,7 +94,7 @@ struct ConstSliceBase : SliceBase {
    *
    * @throw std::out_of_range when index is out of bounds of the slice
    */
-  [[nodiscard]] const value_type& at(size_t index) const {
+  [[nodiscard]] const auto& at(size_t index) const {
     rangeCheck(index);
     // we know: begin_ < end <= size() <= SIZE_T_MAX
     // and: index < end - begin
@@ -160,7 +157,6 @@ struct ConstSliceBase : SliceBase {
 template <template <typename> class storage_type, typename data_type>
 struct MutableSliceBase : public ConstSliceBase<storage_type, data_type> {
   using ConstSliceBase<storage_type, data_type>::ConstSliceBase;
-  using value_type = typename ConstSliceBase<storage_type, data_type>::value_type;
 
   /*!
    * Obtain a reference to the element with the specified index in the
@@ -168,7 +164,7 @@ struct MutableSliceBase : public ConstSliceBase<storage_type, data_type> {
    *
    * @throw std::out_of_range when index is out of bounds of the slice
    */
-  value_type& at(size_t index) {
+  auto& at(size_t index) {
     this->rangeCheck(index);
     return this->storage_.unsafeAt(this->begin_ + index);
   }
@@ -249,14 +245,6 @@ struct MutableSliceBase : public ConstSliceBase<storage_type, data_type> {
  */
 template <typename container>
 struct ContainerStorage {
-  using iterator = typename container::iterator;
-
-#ifdef __cpp_lib_type_trait_variable_templates
-  using value_type = std::remove_cv_t<typename container::value_type>;
-#else
-  using value_type = typename std::remove_cv<typename container::value_type>::type;
-#endif
-
   /*!
    * @throw std::out_of_range when end is larger than the container's
    * size.
@@ -273,11 +261,11 @@ struct ContainerStorage {
    *
    * @throw whatever container::at() throws
    */
-  [[nodiscard]] const value_type& unsafeAt(size_t index) const {
+  [[nodiscard]] const auto& unsafeAt(size_t index) const {
     return data_.at(index);
   }
 
-  [[nodiscard]] value_type& unsafeAt(size_t index) {
+  [[nodiscard]] auto& unsafeAt(size_t index) {
     return data_.at(index);
   }
 
@@ -287,7 +275,7 @@ struct ContainerStorage {
    *
    * @throw whatever container::begin() and std::advance() throw
    */
-  [[nodiscard]] iterator unsafeGetIteratorAt(size_t index) {
+  [[nodiscard]] auto unsafeGetIteratorAt(size_t index) {
     // we are screwed if the container got changed => try to catch it
     assert(index <= data_.size());
 
@@ -316,13 +304,6 @@ struct ContainerStorage {
  */
 template <typename storage_type>
 struct PtrSliceStorage {
-#ifdef __cpp_lib_type_trait_variable_templates
-  using value_type = std::remove_cv_t<std::remove_pointer_t<storage_type>>;
-#else
-  using value_type = typename std::remove_cv<typename std::remove_pointer<storage_type>::type>::type;
-#endif
-  using iterator = value_type*;
-
   /*!
    * Stores ptr and checks that it is not `NULL`. The slice's bounds
    * are ignored, as we do not know the array's length.
@@ -341,11 +322,11 @@ struct PtrSliceStorage {
    *
    * @throw nothing
    */
-  [[nodiscard]] value_type& unsafeAt(size_t index) noexcept {
+  [[nodiscard]] auto& unsafeAt(size_t index) noexcept {
     return data_[index];
   }
 
-  [[nodiscard]] const value_type& unsafeAt(size_t index) const noexcept {
+  [[nodiscard]] const auto& unsafeAt(size_t index) const noexcept {
     return data_[index];
   }
 
@@ -355,7 +336,7 @@ struct PtrSliceStorage {
    *
    * @throw nothing
    */
-  [[nodiscard]] iterator unsafeGetIteratorAt(size_t index) noexcept {
+  [[nodiscard]] auto unsafeGetIteratorAt(size_t index) noexcept {
     return data_ + index;
   }
 
@@ -415,13 +396,6 @@ struct PtrSliceStorage {
 template <typename container>
 struct Slice : public Internal::MutableSliceBase<Internal::ContainerStorage, container> {
   using Internal::MutableSliceBase<Internal::ContainerStorage, container>::MutableSliceBase;
-  using iterator = typename container::iterator;
-
-#ifdef __cpp_lib_type_trait_variable_templates
-  using value_type = std::remove_cv_t<typename container::value_type>;
-#else
-  using value_type = typename std::remove_cv<typename container::value_type>::type;
-#endif
 
   /*!
    * Constructs a new constant subSlice. Behaves otherwise exactly like
@@ -438,13 +412,6 @@ struct Slice : public Internal::MutableSliceBase<Internal::ContainerStorage, con
 template <typename container>
 struct Slice<const container> : public Internal::ConstSliceBase<Internal::ContainerStorage, const container> {
   using Internal::ConstSliceBase<Internal::ContainerStorage, const container>::ConstSliceBase;
-  using iterator = typename container::iterator;
-
-#ifdef __cpp_lib_type_trait_variable_templates
-  using value_type = std::remove_cv_t<typename container::value_type>;
-#else
-  using value_type = typename std::remove_cv<typename container::value_type>::type;
-#endif
 
   [[nodiscard]] Slice subSlice(size_t begin, size_t end) const {
     return Internal::ConstSliceBase<Internal::ContainerStorage,
