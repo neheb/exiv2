@@ -163,8 +163,6 @@ class TiffComponent {
   }
   //! Virtual destructor.
   virtual ~TiffComponent() = default;
-  TiffComponent(const TiffComponent&) = default;
-  TiffComponent& operator=(const TiffComponent&) = default;
   //@}
 
   //! @name Manipulators
@@ -567,12 +565,7 @@ class TiffEntryBase : public TiffComponent {
  */
 class TiffEntry : public TiffEntryBase {
  public:
-  //! @name Creators
-  //@{
-  //! Constructor
-  constexpr TiffEntry(uint16_t tag, IfdId group) : TiffEntryBase(tag, group) {
-  }
-  //@}
+  using TiffEntryBase::TiffEntryBase;
 
  protected:
   //! @name Manipulators
