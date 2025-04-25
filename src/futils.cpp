@@ -58,6 +58,19 @@ namespace fs = std::filesystem;
 
 #endif
 
+namespace {
+/// @brief Convert an integer value to its hex character.
+char to_hex(char code) {
+  static const char hex[] = "0123456789abcdef";
+  return hex[code & 15];
+}
+
+/// @brief Convert a hex character to its integer value.
+char from_hex(char ch) {
+  return 0xF & (isdigit(ch) ? ch - '0' : static_cast<char>(tolower(ch)) - 'a' + 10);
+}
+} // namespace
+
 namespace Exiv2 {
 constexpr std::array ENVARDEF{
     "/exiv2.php",
@@ -76,17 +89,6 @@ std::string getEnv(int env_var) {
     throw std::out_of_range("Unexpected env variable");
   }
   return getenv(ENVARKEY[env_var]) ? getenv(ENVARKEY[env_var]) : ENVARDEF[env_var];
-}
-
-/// @brief Convert an integer value to its hex character.
-static char to_hex(char code) {
-  static const char hex[] = "0123456789abcdef";
-  return hex[code & 15];
-}
-
-/// @brief Convert a hex character to its integer value.
-static char from_hex(char ch) {
-  return 0xF & (isdigit(ch) ? ch - '0' : static_cast<char>(tolower(ch)) - 'a' + 10);
 }
 
 std::string urlencode(const std::string& str) {
