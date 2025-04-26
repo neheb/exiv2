@@ -44,6 +44,7 @@ namespace fs = std::filesystem;
 #endif
 
 #ifndef _WIN32
+#define _isatty isatty
 #define _fileno fileno
 #endif
 
@@ -67,19 +68,13 @@ void BasicIo::seekOrThrow(int64_t offset, Position pos, ErrorCode err) {
 class FileIo::Impl {
  public:
   //! Constructor
-  explicit Impl(std::string path);
-#ifdef _WIN32
-  explicit Impl(std::wstring path);
-#endif
+  explicit Impl(fs::path path);
   ~Impl() = default;
   // Enumerations
   //! Mode of operation
   enum OpMode { opRead, opWrite, opSeek };
   // DATA
-  std::string path_;  //!< (Standard) path
-#ifdef _WIN32
-  std::wstring wpath_;  //!< UCS2 path
-#endif
+  fs::path path_;          //!< (Standard) path
   std::string openMode_;   //!< File open mode
   FILE* fp_{};             //!< File stream pointer
   OpMode opMode_{opSeek};  //!< File open mode
@@ -113,21 +108,8 @@ class FileIo::Impl {
   Impl& operator=(const Impl&) = delete;  //!< Assignment
 };
 
-FileIo::Impl::Impl(std::string path) : path_(std::move(path)) {
-#ifdef _WIN32
-  wchar_t t[512];
-  const auto nw = MultiByteToWideChar(CP_UTF8, 0, path_.data(), static_cast<int>(path_.size()), t, 512);
-  wpath_.assign(t, nw);
-#endif
+FileIo::Impl::Impl(fs::path path) : path_(std::move(path)) {
 }
-#ifdef _WIN32
-FileIo::Impl::Impl(std::wstring path) : wpath_(std::move(path)) {
-  char t[1024];
-  const auto nc =
-      WideCharToMultiByte(CP_UTF8, 0, wpath_.data(), static_cast<int>(wpath_.size()), t, 1024, nullptr, nullptr);
-  path_.assign(t, nc);
-}
-#endif
 
 int FileIo::Impl::switchMode(OpMode opMode) {
   if (opMode_ == opMode)
@@ -177,7 +159,7 @@ int FileIo::Impl::switchMode(OpMode opMode) {
   openMode_ = "r+b";
   opMode_ = opSeek;
 #ifdef _WIN32
-  if (_wfopen_s(&fp_, wpath_.c_str(), L"r+b"))
+  if (_wfopen_s(&fp_, path_.c_str(), L"r+b"))
     return 1;
   return _fseeki64(fp_, offset, SEEK_SET);
 #else
@@ -189,11 +171,7 @@ int FileIo::Impl::switchMode(OpMode opMode) {
 }  // FileIo::Impl::switchMode
 
 int FileIo::Impl::stat(StructStat& buf) const {
-#ifdef _WIN32
-  const auto& file = wpath_;
-#else
   const auto& file = path_;
-#endif
   try {
     buf.st_size = fs::file_size(file);
     buf.st_mode = fs::status(file).permissions();
@@ -320,21 +298,12 @@ byte* FileIo::mmap(bool isWriteable) {
 void FileIo::setPath(const std::string& path) {
   close();
   p_->path_ = path;
-#ifdef _WIN32
-  wchar_t t[512];
-  const auto nw = MultiByteToWideChar(CP_UTF8, 0, p_->path_.data(), static_cast<int>(p_->path_.size()), t, 512);
-  p_->wpath_.assign(t, nw);
-#endif
 }
 
 #ifdef _WIN32
 void FileIo::setPath(const std::wstring& path) {
   close();
-  p_->wpath_ = path;
-  char t[1024];
-  const auto nc = WideCharToMultiByte(CP_UTF8, 0, p_->wpath_.data(), static_cast<int>(p_->wpath_.size()), t, 1024,
-                                      nullptr, nullptr);
-  p_->path_.assign(t, nc);
+  p_->path_ = path;
 }
 #endif
 
@@ -523,7 +492,7 @@ int FileIo::open(const std::string& mode) {
 #ifdef _WIN32
   wchar_t wmode[10];
   MultiByteToWideChar(CP_UTF8, 0, mode.c_str(), -1, wmode, 10);
-  if (_wfopen_s(&p_->fp_, p_->wpath_.c_str(), wmode))
+  if (_wfopen_s(&p_->fp_, p_->path_.c_str(), wmode))
     return 1;
 #else
   p_->fp_ = ::fopen(path().c_str(), mode.c_str());
@@ -583,7 +552,10 @@ bool FileIo::eof() const {
 }
 
 const std::string& FileIo::path() const noexcept {
-  return p_->path_;
+  static thread_local std::string p;
+  auto t = p_->path_.u8string();
+  p = std::string(t.begin(), t.end());
+  return p;
 }
 
 void FileIo::populateFakeData() {
@@ -870,7 +842,7 @@ bool MemIo::eof() const {
 }
 
 const std::string& MemIo::path() const noexcept {
-  static std::string _path{"MemIo"};
+  static const std::string _path{"MemIo"};
   return _path;
 }
 
@@ -921,7 +893,7 @@ std::string XPathIo::writeDataToFile(const std::string& orgPath) {
   auto path = stringFormat("{}{}", timestamp, XPathIo::TEMP_FILE_EXT);
 
   if (prot == pStdin) {
-    if (isatty(_fileno(stdin)))
+    if (_isatty(_fileno(stdin)))
       throw Error(ErrorCode::kerInputDataReadFailed);
 #ifdef _WIN32
     // convert stdin to binary
@@ -973,9 +945,6 @@ class RemoteIo::Impl {
   Impl(const std::string& url, size_t blockSize);
   //! Destructor. Releases all managed memory.
   virtual ~Impl() = default;
-
-  Impl(const Impl&) = delete;
-  Impl& operator=(const Impl&) = delete;
 
   // DATA
   std::string path_;                       //!< (Standard) path
@@ -1484,10 +1453,8 @@ class CurlIo::CurlImpl : public Impl {
  public:
   //! Constructor
   CurlImpl(const std::string& url, size_t blockSize);
-  //! Destructor. Cleans up the curl pointer and releases all managed memory.
-  ~CurlImpl() override;
 
-  CURL* curl_;  //!< libcurl pointer
+  std::unique_ptr<CURL, decltype(&curl_easy_cleanup)> curl_;  //!< libcurl pointer
 
   // METHODS
   /*!
@@ -1521,18 +1488,12 @@ class CurlIo::CurlImpl : public Impl {
    */
   void writeRemote(const byte* data, size_t size, size_t from, size_t to) override;
 
-  // NOT IMPLEMENTED
-  CurlImpl(const CurlImpl&) = delete;             //!< Copy constructor
-  CurlImpl& operator=(const CurlImpl&) = delete;  //!< Assignment
  private:
   long timeout_;  //!< The number of seconds to wait while trying to connect.
 };
 
-CurlIo::CurlImpl::CurlImpl(const std::string& url, size_t blockSize) : Impl(url, blockSize), curl_(curl_easy_init()) {
-  if (!curl_) {
-    throw Error(ErrorCode::kerErrorMessage, "Unable to init libcurl.");
-  }
-
+CurlIo::CurlImpl::CurlImpl(const std::string& url, size_t blockSize) :
+    Impl(url, blockSize), curl_(curl_easy_init(), curl_easy_cleanup) {
   // The default block size for FTP is much larger than other protocols
   // the reason is that getDataByRange() in FTP always creates the new connection,
   // so we need the large block size to reduce the overhead of creating the connection.
@@ -1548,54 +1509,54 @@ CurlIo::CurlImpl::CurlImpl(const std::string& url, size_t blockSize) : Impl(url,
 }
 
 int64_t CurlIo::CurlImpl::getFileLength() {
-  curl_easy_reset(curl_);  // reset all options
-  curl_easy_setopt(curl_, CURLOPT_URL, path_.c_str());
-  curl_easy_setopt(curl_, CURLOPT_NOBODY, 1);  // HEAD
-  curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, curlWriter);
-  curl_easy_setopt(curl_, CURLOPT_SSL_VERIFYPEER, 0L);
-  curl_easy_setopt(curl_, CURLOPT_SSL_VERIFYHOST, 0L);
-  curl_easy_setopt(curl_, CURLOPT_CONNECTTIMEOUT, timeout_);
-  // curl_easy_setopt(curl_, CURLOPT_VERBOSE, 1); // debugging mode
+  curl_easy_reset(curl_.get());  // reset all options
+  curl_easy_setopt(curl_.get(), CURLOPT_URL, path_.c_str());
+  curl_easy_setopt(curl_.get(), CURLOPT_NOBODY, 1);  // HEAD
+  curl_easy_setopt(curl_.get(), CURLOPT_WRITEFUNCTION, curlWriter);
+  curl_easy_setopt(curl_.get(), CURLOPT_SSL_VERIFYPEER, 0L);
+  curl_easy_setopt(curl_.get(), CURLOPT_SSL_VERIFYHOST, 0L);
+  curl_easy_setopt(curl_.get(), CURLOPT_CONNECTTIMEOUT, timeout_);
+  // curl_easy_setopt(curl_.get(), CURLOPT_VERBOSE, 1); // debugging mode
 
   /* Perform the request, res will get the return code */
-  if (auto res = curl_easy_perform(curl_); res != CURLE_OK) {  // error happened
+  if (auto res = curl_easy_perform(curl_.get()); res != CURLE_OK) {  // error happened
     throw Error(ErrorCode::kerErrorMessage, curl_easy_strerror(res));
   }
   // get status
   int serverCode;
-  curl_easy_getinfo(curl_, CURLINFO_RESPONSE_CODE, &serverCode);  // get code
+  curl_easy_getinfo(curl_.get(), CURLINFO_RESPONSE_CODE, &serverCode);  // get code
   if (serverCode >= 400 || serverCode < 0) {
     throw Error(ErrorCode::kerFileOpenFailed, "http", serverCode, path_);
   }
   // get length
   curl_off_t temp;
-  curl_easy_getinfo(curl_, CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &temp);  // return -1 if unknown
+  curl_easy_getinfo(curl_.get(), CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &temp);  // return -1 if unknown
   return temp;
 }
 
 void CurlIo::CurlImpl::getDataByRange(size_t lowBlock, size_t highBlock, std::string& response) {
-  curl_easy_reset(curl_);  // reset all options
-  curl_easy_setopt(curl_, CURLOPT_URL, path_.c_str());
-  curl_easy_setopt(curl_, CURLOPT_NOPROGRESS, 1L);  // no progress meter please
-  curl_easy_setopt(curl_, CURLOPT_WRITEFUNCTION, curlWriter);
-  curl_easy_setopt(curl_, CURLOPT_WRITEDATA, &response);
-  curl_easy_setopt(curl_, CURLOPT_SSL_VERIFYPEER, 0L);
-  curl_easy_setopt(curl_, CURLOPT_CONNECTTIMEOUT, timeout_);
-  curl_easy_setopt(curl_, CURLOPT_SSL_VERIFYHOST, 0L);
+  curl_easy_reset(curl_.get());  // reset all options
+  curl_easy_setopt(curl_.get(), CURLOPT_URL, path_.c_str());
+  curl_easy_setopt(curl_.get(), CURLOPT_NOPROGRESS, 1L);  // no progress meter please
+  curl_easy_setopt(curl_.get(), CURLOPT_WRITEFUNCTION, curlWriter);
+  curl_easy_setopt(curl_.get(), CURLOPT_WRITEDATA, &response);
+  curl_easy_setopt(curl_.get(), CURLOPT_SSL_VERIFYPEER, 0L);
+  curl_easy_setopt(curl_.get(), CURLOPT_CONNECTTIMEOUT, timeout_);
+  curl_easy_setopt(curl_.get(), CURLOPT_SSL_VERIFYHOST, 0L);
 
-  // curl_easy_setopt(curl_, CURLOPT_VERBOSE, 1); // debugging mode
+  // curl_easy_setopt(curl_.get(), CURLOPT_VERBOSE, 1); // debugging mode
 
   if (lowBlock != std::numeric_limits<size_t>::max() && highBlock != std::numeric_limits<size_t>::max()) {
-    auto range = stringFormat("{}-{}", lowBlock * blockSize_, (highBlock + 1) * (blockSize_ - 1));
-    curl_easy_setopt(curl_, CURLOPT_RANGE, range.c_str());
+    auto range = stringFormat("{}-{}", lowBlock * blockSize_, ((highBlock + 1) * blockSize_) - 1);
+    curl_easy_setopt(curl_.get(), CURLOPT_RANGE, range.c_str());
   }
 
   /* Perform the request, res will get the return code */
-  if (auto res = curl_easy_perform(curl_); res != CURLE_OK) {
+  if (auto res = curl_easy_perform(curl_.get()); res != CURLE_OK) {
     throw Error(ErrorCode::kerErrorMessage, curl_easy_strerror(res));
   }
   int serverCode;
-  curl_easy_getinfo(curl_, CURLINFO_RESPONSE_CODE, &serverCode);  // get code
+  curl_easy_getinfo(curl_.get(), CURLINFO_RESPONSE_CODE, &serverCode);  // get code
   if (serverCode >= 400 || serverCode < 0) {
     throw Error(ErrorCode::kerFileOpenFailed, "http", serverCode, path_);
   }
@@ -1618,11 +1579,11 @@ void CurlIo::CurlImpl::writeRemote(const byte* data, size_t size, size_t from, s
     scriptPath = hostInfo.Protocol + "://" + hostInfo.Host + scriptPath;
   }
 
-  curl_easy_reset(curl_);                           // reset all options
-  curl_easy_setopt(curl_, CURLOPT_NOPROGRESS, 1L);  // no progress meter please
-  // curl_easy_setopt(curl_, CURLOPT_VERBOSE, 1); // debugging mode
-  curl_easy_setopt(curl_, CURLOPT_URL, scriptPath.c_str());
-  curl_easy_setopt(curl_, CURLOPT_SSL_VERIFYPEER, 0L);
+  curl_easy_reset(curl_.get());                           // reset all options
+  curl_easy_setopt(curl_.get(), CURLOPT_NOPROGRESS, 1L);  // no progress meter please
+  // curl_easy_setopt(curl_.get(), CURLOPT_VERBOSE, 1); // debugging mode
+  curl_easy_setopt(curl_.get(), CURLOPT_URL, scriptPath.c_str());
+  curl_easy_setopt(curl_.get(), CURLOPT_SSL_VERIFYPEER, 0L);
 
   // encode base64
   size_t encodeLength = (((size + 2) / 3) * 4) + 1;
@@ -1632,20 +1593,16 @@ void CurlIo::CurlImpl::writeRemote(const byte* data, size_t size, size_t from, s
   const std::string urlencodeData = urlencode(encodeData.get());
   auto postData = stringFormat("path={}&from={}&to={}&data={}", hostInfo.Path, from, to, urlencodeData);
 
-  curl_easy_setopt(curl_, CURLOPT_POSTFIELDS, postData.c_str());
+  curl_easy_setopt(curl_.get(), CURLOPT_POSTFIELDS, postData.c_str());
   // Perform the request, res will get the return code.
-  if (auto res = curl_easy_perform(curl_); res != CURLE_OK) {
+  if (auto res = curl_easy_perform(curl_.get()); res != CURLE_OK) {
     throw Error(ErrorCode::kerErrorMessage, curl_easy_strerror(res));
   }
   int serverCode;
-  curl_easy_getinfo(curl_, CURLINFO_RESPONSE_CODE, &serverCode);
+  curl_easy_getinfo(curl_.get(), CURLINFO_RESPONSE_CODE, &serverCode);
   if (serverCode >= 400 || serverCode < 0) {
     throw Error(ErrorCode::kerFileOpenFailed, "http", serverCode, path_);
   }
-}
-
-CurlIo::CurlImpl::~CurlImpl() {
-  curl_easy_cleanup(curl_);
 }
 
 size_t CurlIo::write(const byte* data, size_t wcount) {

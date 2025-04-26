@@ -110,7 +110,7 @@ TYPED_TEST_P(slice, subSliceFunctions) {
   auto middle = this->getTestSlice(3, 7).subSlice(1, 3);
 
   ASSERT_EQ(middle.size(), static_cast<size_t>(2));
-  ASSERT_EQ(middle.at(1), static_cast<typename Slice<TypeParam>::value_type>(5));
+  ASSERT_EQ(middle.at(1), 5);
 }
 
 TYPED_TEST_P(slice, subSliceFailedConstruction) {
@@ -136,7 +136,7 @@ TYPED_TEST_P(slice, subSliceConstructionOverflowResistance) {
  * constant reference.
  */
 template <typename T>
-void checkConstSliceValueAt(const Slice<T>& sl, typename Slice<T>::value_type value, size_t index) {
+void checkConstSliceValueAt(const Slice<T>& sl, auto value, size_t index) {
   ASSERT_EQ(sl.at(index), value);
 }
 
@@ -145,7 +145,7 @@ void checkConstSliceValueAt(const Slice<T>& sl, typename Slice<T>::value_type va
  * loop.
  */
 template <typename T>
-void checkConstSliceIterator(const Slice<T>& sl, typename Slice<T>::value_type first_value) {
+void checkConstSliceIterator(const Slice<T>& sl, auto first_value) {
   for (auto it = sl.cbegin(); it < sl.cend(); ++it) {
     ASSERT_EQ(*it, first_value++);
   }
@@ -178,8 +178,8 @@ TYPED_TEST_P(slice, constMethodsPreserveConst) {
 TYPED_TEST_P(mutableSlice, iterators) {
   auto sl = this->getTestSlice();
 
-  ASSERT_EQ(*sl.begin(), static_cast<typename decltype(sl)::value_type>(1));
-  ASSERT_EQ(*sl.end(), static_cast<typename decltype(sl)::value_type>(this->vec_size - 1));
+  ASSERT_EQ(*sl.begin(), 1);
+  ASSERT_EQ(*sl.end(), this->vec_size - 1);
 
   for (auto it = sl.begin(); it < sl.end(); ++it) {
     *it *= 2;
@@ -187,10 +187,10 @@ TYPED_TEST_P(mutableSlice, iterators) {
 
   ASSERT_EQ(this->vec_.at(0), 0);
   for (size_t j = 1; j < this->vec_size - 1; ++j) {
-    ASSERT_EQ(this->vec_.at(j), static_cast<typename decltype(sl)::value_type>(2 * j));
+    ASSERT_EQ(this->vec_.at(j), 2 * j);
     ASSERT_EQ(this->vec_.at(j), sl.at(j - 1));
   }
-  ASSERT_EQ(this->vec_.at(this->vec_size - 1), static_cast<typename decltype(sl)::value_type>(this->vec_size - 1));
+  ASSERT_EQ(this->vec_.at(this->vec_size - 1), this->vec_size - 1);
 }
 
 /*!
@@ -208,7 +208,7 @@ TYPED_TEST_P(mutableSlice, at) {
     if (j == 2 || j == 3) {
       continue;
     }
-    ASSERT_EQ(this->vec_.at(j), static_cast<typename decltype(sl)::value_type>(j));
+    ASSERT_EQ(this->vec_.at(j), j);
   }
 }
 

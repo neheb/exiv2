@@ -86,15 +86,16 @@ BmffImage::BmffImage(BasicIo::UniquePtr io, bool /* create */, size_t max_box_de
 }  // BmffImage::BmffImage
 
 std::string BmffImage::toAscii(uint32_t n) {
-  const auto p = reinterpret_cast<const char*>(&n);
-  std::string result(p, p + 4);
-  if (!isBigEndianPlatform())
-    std::reverse(result.begin(), result.end());
-  // show 0 as _
-  std::replace(result.begin(), result.end(), '\0', '_');
-  // show non 7-bit printable ascii as .
-  auto f = [](unsigned char c) { return c < 32 || c > 126; };
-  std::replace_if(result.begin(), result.end(), f, '.');
+  std::string result(sizeof(uint32_t), '\0');
+  for (size_t i = 0; i < result.size(); ++i) {
+    auto c = static_cast<unsigned char>(n >> (8 * (3 - i)));
+    if (c == 0)
+      result[i] = '_';
+    else if (c < 32 || c > 126)
+      result[i] = '.';
+    else
+      result[i] = static_cast<char>(c);
+  }
   return result;
 }
 
@@ -176,30 +177,10 @@ std::string BmffImage::uuidName(const Exiv2::DataBuf& uuid) {
 
 // Wrapper class for BrotliDecoderState that automatically calls
 // BrotliDecoderDestroyInstance in its destructor.
-class BrotliDecoderWrapper {
-  BrotliDecoderState* decoder_;
-
- public:
-  BrotliDecoderWrapper() : decoder_(BrotliDecoderCreateInstance(nullptr, nullptr, nullptr)) {
-    if (!decoder_) {
-      throw Error(ErrorCode::kerMallocFailed);
-    }
-  }
-
-  ~BrotliDecoderWrapper() {
-    BrotliDecoderDestroyInstance(decoder_);
-  }
-
-  BrotliDecoderWrapper(const BrotliDecoderWrapper&) = delete;
-  BrotliDecoderWrapper& operator=(const BrotliDecoderWrapper&) = delete;
-
-  [[nodiscard]] BrotliDecoderState* get() const {
-    return decoder_;
-  }
-};
+using BrotliDecoder = std::unique_ptr<BrotliDecoderState, decltype(&BrotliDecoderDestroyInstance)>;
 
 void BmffImage::brotliUncompress(const byte* compressedBuf, size_t compressedBufSize, DataBuf& arr) {
-  BrotliDecoderWrapper decoder;
+  auto decoder = BrotliDecoder(BrotliDecoderCreateInstance(nullptr, nullptr, nullptr), BrotliDecoderDestroyInstance);
   size_t uncompressedLen = compressedBufSize * 2;  // just a starting point
   BrotliDecoderResult result = BROTLI_DECODER_RESULT_NEEDS_MORE_INPUT;
   int dos = 0;
