@@ -523,7 +523,7 @@ class EXIV2API ImageFactory {
    */
   static BasicIo::UniquePtr createIo(const std::string& path, bool useCurl = true);
 #ifdef _WIN32
-  static BasicIo::UniquePtr createIo(const std::wstring& path);
+  static BasicIo::UniquePtr createIo(const std::wstring& path, bool useCurl = true);
 #endif
   /*!
     @brief Create an Image subclass of the appropriate type by reading
@@ -540,7 +540,7 @@ class EXIV2API ImageFactory {
    */
   static Image::UniquePtr open(const std::string& path, bool useCurl = true);
 #ifdef _WIN32
-  static Image::UniquePtr open(const std::wstring& path);
+  static Image::UniquePtr open(const std::wstring& path, bool useCurl = true);
 #endif
   /*!
     @brief Create an Image subclass of the appropriate type by reading
@@ -615,6 +615,9 @@ class EXIV2API ImageFactory {
     @return %Image type or Image::none if the type is not recognized.
    */
   static ImageType getType(const std::string& path);
+#ifdef _WIN32
+  static ImageType getType(const std::wstring& path);
+#endif
   /*!
     @brief Returns the image type of the provided data buffer.
     @param data Pointer to a data buffer containing an image. The contents

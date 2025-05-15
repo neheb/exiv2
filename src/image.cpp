@@ -129,6 +129,11 @@ std::string pathOfFileUrl(const std::string& url) {
 }
 #endif
 
+bool typeValid(uint16_t type) {
+  return type >= 1 && type <= 13;
+}
+
+std::set<size_t> visits;  // #547
 }  // namespace
 
 // *****************************************************************************
@@ -184,6 +189,8 @@ bool Image::isLittleEndianPlatform() {
 uint64_t Image::byteSwap(uint64_t value, bool bSwap) {
 #ifdef __cpp_lib_byteswap
   return bSwap ? std::byteswap(value) : value;
+#elif defined(_MSC_VER)
+  return bSwap ? _byteswap_uint64(value) : value;
 #else
   uint64_t result = 0;
   auto source_value = reinterpret_cast<const byte*>(&value);
@@ -199,6 +206,8 @@ uint64_t Image::byteSwap(uint64_t value, bool bSwap) {
 uint32_t Image::byteSwap(uint32_t value, bool bSwap) {
 #ifdef __cpp_lib_byteswap
   return bSwap ? std::byteswap(value) : value;
+#elif defined(_MSC_VER)
+  return bSwap ? _byteswap_ulong(value) : value;
 #else
   uint32_t result = 0;
   result |= (value & 0x000000FFU) << 24;
@@ -212,6 +221,8 @@ uint32_t Image::byteSwap(uint32_t value, bool bSwap) {
 uint16_t Image::byteSwap(uint16_t value, bool bSwap) {
 #ifdef __cpp_lib_byteswap
   return bSwap ? std::byteswap(value) : value;
+#elif defined(_MSC_VER)
+  return bSwap ? _byteswap_ushort(value) : value;
 #else
   uint16_t result = 0;
   result |= (value & 0x00FFU) << 8;
@@ -298,12 +309,6 @@ const char* Image::typeName(uint16_t tag) {
   }
   return result;
 }
-
-static bool typeValid(uint16_t type) {
-  return type >= 1 && type <= 13;
-}
-
-static std::set<size_t> visits;  // #547
 
 void Image::printIFDStructure(BasicIo& io, std::ostream& out, Exiv2::PrintStructureOption option, size_t start,
                               bool bSwap, char c, size_t depth) {
@@ -763,6 +768,17 @@ ImageType ImageFactory::getType([[maybe_unused]] const std::string& path) {
 #endif
 }
 
+#ifdef _WIN32
+ImageType ImageFactory::getType([[maybe_unused]] const std::wstring& path) {
+#ifdef EXV_ENABLE_FILESYSTEM
+  FileIo fileIo(path);
+  return getType(fileIo);
+#else
+  return ImageType::none;
+#endif
+}
+#endif
+
 ImageType ImageFactory::getType(const byte* data, size_t size) {
   MemIo memIo(data, size);
   return getType(memIo);
@@ -806,7 +822,7 @@ BasicIo::UniquePtr ImageFactory::createIo(const std::string& path, [[maybe_unuse
 }  // ImageFactory::createIo
 
 #ifdef _WIN32
-BasicIo::UniquePtr ImageFactory::createIo(const std::wstring& path) {
+BasicIo::UniquePtr ImageFactory::createIo(const std::wstring& path, bool) {
 #ifdef EXV_ENABLE_FILESYSTEM
   return std::make_unique<FileIo>(path);
 #else
@@ -823,8 +839,8 @@ Image::UniquePtr ImageFactory::open(const std::string& path, bool useCurl) {
 }
 
 #ifdef _WIN32
-Image::UniquePtr ImageFactory::open(const std::wstring& path) {
-  auto image = open(ImageFactory::createIo(path));  // may throw
+Image::UniquePtr ImageFactory::open(const std::wstring& path, bool useCurl) {
+  auto image = open(ImageFactory::createIo(path, useCurl));  // may throw
   if (!image) {
     char t[1024];
     WideCharToMultiByte(CP_UTF8, 0, path.c_str(), -1, t, 1024, nullptr, nullptr);
