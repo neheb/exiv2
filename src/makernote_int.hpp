@@ -5,8 +5,10 @@
 
 // *****************************************************************************
 // included header files
-#include "tags_int.hpp"
+#include "tags.hpp"
 #include "types.hpp"
+
+#include <memory>
 
 // namespace extensions
 namespace Exiv2::Internal {
@@ -78,11 +80,6 @@ class TiffMnCreator {
            when a makernote is written back from Exif tags.
    */
   static std::unique_ptr<TiffComponent> create(uint16_t tag, IfdId group, IfdId mnGroup);
-
-  ~TiffMnCreator() = default;
-  //! Prevent destruction (needed if used as a policy class)
-  TiffMnCreator(const TiffComponent&) = delete;
-  TiffMnCreator& operator=(const TiffComponent&) = delete;
 
  private:
   static const TiffMnRegistry registry_[];  //!< List of makernotes

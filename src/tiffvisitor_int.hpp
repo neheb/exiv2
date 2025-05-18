@@ -8,7 +8,6 @@
 #include "exif.hpp"
 #include "tiffcomposite_int.hpp"  // Do not change the order of these 2 includes,
 #include "tifffwd_int.hpp"
-#include "tiffimage_int.hpp"
 #include "types.hpp"
 
 #include <array>
@@ -134,10 +133,6 @@ class TiffFinder : public TiffVisitor {
   //! Constructor, taking \em tag and \em group of the component to find.
   constexpr TiffFinder(uint16_t tag, IfdId group) : tag_(tag), group_(group) {
   }
-  TiffFinder(const TiffFinder&) = delete;
-  TiffFinder& operator=(const TiffFinder&) = delete;
-  //! Virtual destructor
-  ~TiffFinder() override = default;
   //@}
 
   //! @name Manipulators
@@ -204,10 +199,6 @@ class TiffCopier : public TiffVisitor {
     @param pPrimaryGroups Pointer to the list of primary groups.
    */
   TiffCopier(TiffComponent* pRoot, uint32_t root, const TiffHeaderBase* pHeader, PrimaryGroups pPrimaryGroups);
-  TiffCopier(const TiffCopier&) = delete;
-  TiffCopier& operator=(const TiffCopier&) = delete;
-  //! Virtual destructor
-  ~TiffCopier() override = default;
   //@}
 
   //! @name Manipulators
@@ -261,10 +252,6 @@ class TiffDecoder : public TiffVisitor {
    */
   TiffDecoder(ExifData& exifData, IptcData& iptcData, XmpData& xmpData, TiffComponent* pRoot,
               FindDecoderFct findDecoderFct);
-  TiffDecoder(const TiffDecoder&) = delete;
-  TiffDecoder& operator=(const TiffDecoder&) = delete;
-  //! Virtual destructor
-  ~TiffDecoder() override = default;
   //@}
 
   //! @name Manipulators
@@ -353,10 +340,6 @@ class TiffEncoder : public TiffVisitor {
    */
   TiffEncoder(ExifData& exifData, IptcData& iptcData, XmpData& xmpData, TiffComponent* pRoot, bool isNewImage,
               PrimaryGroups pPrimaryGroups, const TiffHeaderBase* pHeader, FindEncoderFct findEncoderFct);
-  TiffEncoder(const TiffEncoder&) = delete;
-  TiffEncoder& operator=(const TiffEncoder&) = delete;
-  //! Virtual destructor
-  ~TiffEncoder() override = default;
   //@}
 
   //! @name Manipulators
@@ -592,11 +575,6 @@ class TiffReader : public TiffVisitor {
                      base offset.
    */
   TiffReader(const byte* pData, size_t size, TiffComponent* pRoot, TiffRwState state);
-  TiffReader(const TiffReader&) = delete;
-  TiffReader& operator=(const TiffReader&) = delete;
-
-  //! Virtual destructor
-  ~TiffReader() override = default;
   //@}
 
   //! @name Manipulators

@@ -832,10 +832,9 @@ void MatroskaVideo::decodeDateTags(const MatroskaTag* tag, const byte* buf, size
   switch (tag->_id) {
     case Xmp_video_Duration:
       if (size <= 4) {
-        duration_in_ms =
-            static_cast<int64_t>(getFloat(buf, bigEndian) * static_cast<float>(time_code_scale_) * 1000.0f);
+        duration_in_ms = std::llround(getFloat(buf, bigEndian) * time_code_scale_ * 1000.0f);
       } else {
-        duration_in_ms = static_cast<int64_t>(getDouble(buf, bigEndian) * time_code_scale_ * 1000);
+        duration_in_ms = std::llround(getDouble(buf, bigEndian) * time_code_scale_ * 1000);
       }
       xmpData_[tag->_label] = duration_in_ms;
       break;
@@ -884,7 +883,7 @@ void MatroskaVideo::decodeFloatTags(const MatroskaTag* tag, const byte* buf) {
           default:
             break;
         }
-        if (frame_rate > 0.0)
+        if (std::isgreater(frame_rate, 0.0))
           xmpData_[internalMt->_label] = frame_rate;
       } else
         xmpData_[tag->_label] = "Variable Bit Rate";
