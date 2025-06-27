@@ -254,6 +254,18 @@ jobs:
             meson setup "${{github.workspace}}/build" -Dwarning_level=3
             meson compile -C "${{github.workspace}}/build" --verbose
             meson test -C "${{github.workspace}}/build" --verbose
+  OpenBSD:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: vmactions/openbsd-vm@v1
+        with:
+          prepare: |
+            pkg_add brotli curl gettext-runtime gettext-tools gtest libinih meson ninja pkgconf
+          run: |
+            meson setup "${{github.workspace}}/build" -Dwarning_level=3
+            meson compile -C "${{github.workspace}}/build" --verbose
+            meson test -C "${{github.workspace}}/build" --verbose
   OmniOS:
     runs-on: ubuntu-latest
     steps:
