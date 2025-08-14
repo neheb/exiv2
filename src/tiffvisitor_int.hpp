@@ -56,7 +56,7 @@ class TiffVisitor {
   //@{
   TiffVisitor() = default;
   //! Virtual destructor
-  virtual ~TiffVisitor() = default;
+  virtual ~TiffVisitor();
   TiffVisitor(const TiffVisitor&) = delete;
   TiffVisitor& operator=(const TiffVisitor&) = delete;
   //@}
@@ -133,8 +133,10 @@ class TiffFinder : public TiffVisitor {
   //! @name Creators
   //@{
   //! Constructor, taking \em tag and \em group of the component to find.
-  constexpr TiffFinder(uint16_t tag, IfdId group) : tag_(tag), group_(group) {
-  }
+  TiffFinder(uint16_t tag, IfdId group);
+
+  //! Virtual destructor
+  ~TiffFinder() override;
   //@}
 
   //! @name Manipulators
@@ -172,7 +174,7 @@ class TiffFinder : public TiffVisitor {
     @brief Return the search result. 0 if no TIFF component was found
            for the tag and group combination.
    */
-  [[nodiscard]] TiffComponent* result() const {
+  [[nodiscard]] auto result() const {
     return tiffComponent_;
   }
   //@}
@@ -201,6 +203,8 @@ class TiffCopier : public TiffVisitor {
     @param pPrimaryGroups Pointer to the list of primary groups.
    */
   TiffCopier(TiffComponent* pRoot, uint32_t root, const TiffHeaderBase* pHeader, PrimaryGroups pPrimaryGroups);
+  //! Virtual destructor
+  ~TiffCopier() override;
   //@}
 
   //! @name Manipulators
@@ -254,6 +258,8 @@ class TiffDecoder : public TiffVisitor {
    */
   TiffDecoder(ExifData& exifData, IptcData& iptcData, XmpData& xmpData, TiffComponent* pRoot,
               FindDecoderFct findDecoderFct);
+  //! Virtual destructor
+  ~TiffDecoder() override;
   //@}
 
   //! @name Manipulators
@@ -529,7 +535,7 @@ class TiffRwState {
   //! @name Creators
   //@{
   //! Constructor.
-  constexpr TiffRwState(ByteOrder byteOrder, size_t baseOffset) : byteOrder_(byteOrder), baseOffset_(baseOffset) {
+  TiffRwState(ByteOrder byteOrder, size_t baseOffset) : byteOrder_(byteOrder), baseOffset_(baseOffset) {
   }
   //@}
 
@@ -582,6 +588,9 @@ class TiffReader : public TiffVisitor {
                      base offset.
    */
   TiffReader(const byte* pData, size_t size, TiffComponent* pRoot, TiffRwState state);
+
+  //! Virtual destructor
+  ~TiffReader() override;
   //@}
 
   //! @name Manipulators

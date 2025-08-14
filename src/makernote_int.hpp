@@ -94,7 +94,7 @@ class MnHeader {
   //@{
   MnHeader() = default;
   //! Virtual destructor.
-  virtual ~MnHeader() = default;
+  virtual ~MnHeader();
   MnHeader(const MnHeader&) = delete;
   MnHeader& operator=(const MnHeader&) = delete;
   //@}

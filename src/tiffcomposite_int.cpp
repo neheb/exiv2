@@ -69,9 +69,13 @@ void IoWrapper::setTarget(int id, size_t target) {
 TiffDirectory::TiffDirectory(uint16_t tag, IfdId group, bool hasNext) : TiffComponent(tag, group), hasNext_(hasNext) {
 }
 
+TiffDirectory::~TiffDirectory() = default;
+
 TiffSubIfd::TiffSubIfd(uint16_t tag, IfdId group, IfdId newGroup) :
     TiffEntryBase(tag, group, ttUnsignedLong), newGroup_(newGroup) {
 }
+
+TiffSubIfd::~TiffSubIfd() = default;
 
 TiffIfdMakernote::TiffIfdMakernote(uint16_t tag, IfdId group, IfdId mnGroup, std::unique_ptr<MnHeader> pHeader,
                                    bool hasNext) :
@@ -106,6 +110,8 @@ TiffBinaryArray::TiffBinaryArray(const TiffBinaryArray& rhs) :
     origSize_(rhs.origSize_),
     pRoot_(rhs.pRoot_) {
 }
+
+TiffBinaryArray::~TiffBinaryArray() = default;
 
 TiffEntryBase::TiffEntryBase(uint16_t tag, IfdId group, TiffType tiffType) :
     TiffComponent(tag, group), tiffType_(tiffType) {
@@ -426,6 +432,11 @@ size_t TiffBinaryArray::addElement(size_t idx, const ArrayDef& def) {
   addChild(std::move(tc));
   return sz;
 }  // TiffBinaryArray::addElement
+
+TiffComponent::TiffComponent(uint16_t tag, IfdId group) : tag_(tag), group_(group) {
+}
+
+TiffComponent::~TiffComponent() = default;
 
 TiffComponent* TiffComponent::addPath(uint16_t tag, TiffPath& tiffPath, TiffComponent* pRoot,
                                       TiffComponent::UniquePtr object) {

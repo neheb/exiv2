@@ -157,6 +157,8 @@ std::unique_ptr<TiffIfdMakernote> TiffMnCreator::create(uint16_t tag, IfdId grou
   return nullptr;
 }  // TiffMnCreator::create
 
+MnHeader::~MnHeader() = default;
+
 void MnHeader::setByteOrder(ByteOrder) {
 }
 
