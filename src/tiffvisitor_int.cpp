@@ -58,6 +58,9 @@ Exiv2::ByteOrder stringToByteOrder(std::string_view val) {
 // *****************************************************************************
 // class member definitions
 namespace Exiv2::Internal {
+
+TiffVisitor::~TiffVisitor() = default;
+
 void TiffVisitor::setGo(GoEvent event, bool go) {
   go_[event] = go;
 }
@@ -77,6 +80,11 @@ void TiffVisitor::visitIfdMakernoteEnd(TiffIfdMakernote* /*object*/) {
 
 void TiffVisitor::visitBinaryArrayEnd(TiffBinaryArray* /*object*/) {
 }
+
+TiffFinder::TiffFinder(uint16_t tag, IfdId group) : tag_(tag), group_(group) {
+}
+
+TiffFinder::~TiffFinder() = default;
 
 void TiffFinder::init(uint16_t tag, IfdId group) {
   tag_ = tag;
@@ -136,6 +144,8 @@ TiffCopier::TiffCopier(TiffComponent* pRoot, uint32_t root, const TiffHeaderBase
                        PrimaryGroups pPrimaryGroups) :
     pRoot_(pRoot), root_(root), pHeader_(pHeader), pPrimaryGroups_(std::move(pPrimaryGroups)) {
 }
+
+TiffCopier::~TiffCopier() = default;
 
 void TiffCopier::copyObject(const TiffComponent* object) {
   if (pHeader_->isImageTag(object->tag(), object->group(), pPrimaryGroups_)) {
@@ -208,6 +218,8 @@ TiffDecoder::TiffDecoder(ExifData& exifData, IptcData& iptcData, XmpData& xmpDat
     }
   }
 }
+
+TiffDecoder::~TiffDecoder() = default;
 
 void TiffDecoder::visitEntry(TiffEntry* object) {
   decodeTiffEntry(object);
@@ -979,6 +991,8 @@ TiffReader::TiffReader(const byte* pData, size_t size, TiffComponent* pRoot, Tif
   pState_ = &origState_;
 
 }  // TiffReader::TiffReader
+
+TiffReader::~TiffReader() = default;
 
 void TiffReader::setOrigState() {
   pState_ = &origState_;

@@ -157,6 +157,8 @@ TiffComponent::UniquePtr TiffMnCreator::create(uint16_t tag, IfdId group, IfdId 
   return nullptr;
 }  // TiffMnCreator::create
 
+MnHeader::~MnHeader() = default;
+
 void MnHeader::setByteOrder(ByteOrder) {
 }
 

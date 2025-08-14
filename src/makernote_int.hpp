@@ -92,7 +92,7 @@ class MnHeader {
   //! @name Creators
   //@{
   //! Virtual destructor.
-  virtual ~MnHeader() = default;
+  virtual ~MnHeader();
   //@}
   //! @name Manipulators
   //@{

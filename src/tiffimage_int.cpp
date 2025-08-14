@@ -2049,7 +2049,7 @@ ByteOrder TiffParserWorker::decode(ExifData& exifData, IptcData& iptcData, XmpDa
   std::unique_ptr<TiffHeaderBase> ph;
   if (!pHeader) {
     ph = std::make_unique<TiffHeader>();
-    pHeader = ph.get();
+    pHeader = ph.release();
   }
 
   if (auto rootDir = parse(pData, size, root, pHeader)) {
@@ -2162,6 +2162,8 @@ PrimaryGroups TiffParserWorker::findPrimaryGroups(const TiffComponent::UniquePtr
 TiffHeaderBase::TiffHeaderBase(uint16_t tag, uint32_t size, ByteOrder byteOrder, uint32_t offset) :
     tag_(tag), size_(size), byteOrder_(byteOrder), offset_(offset) {
 }
+
+TiffHeaderBase::~TiffHeaderBase() = default;
 
 bool TiffHeaderBase::read(const byte* pData, size_t size) {
   if (!pData || size < 8)
