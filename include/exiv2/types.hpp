@@ -123,7 +123,7 @@ struct EXIV2API DataBuf {
   //! @name Creators
   //@{
   //! Default constructor
-  DataBuf() = default;
+  DataBuf();
   //! Constructor with an initial buffer size
   explicit DataBuf(size_t size);
   //! Constructor, copies an existing buffer

@@ -132,9 +132,6 @@ using XmpMetadata = std::vector<Xmpdatum>;
 */
 class EXIV2API XmpData {
  public:
-  //! Default constructor
-  XmpData() = default;
-
   //! XmpMetadata iterator type
   using iterator = XmpMetadata::iterator;
   //! XmpMetadata const iterator type

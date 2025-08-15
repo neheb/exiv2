@@ -37,7 +37,7 @@ class EXIV2API BasicIo {
 
   //! @name Creators
   //@{
-  BasicIo() = default;
+  BasicIo();
   //! Destructor
   virtual ~BasicIo();
   BasicIo(const BasicIo&) = delete;

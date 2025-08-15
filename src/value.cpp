@@ -16,6 +16,9 @@
 // *****************************************************************************
 // class member definitions
 namespace Exiv2 {
+
+Value::~Value() = default;
+
 Value::Value(TypeId typeId) : type_(typeId) {
 }
 
