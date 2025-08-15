@@ -52,7 +52,7 @@ class EXIV2API PreviewImage {
   PreviewImage(const PreviewImage& rhs);
   //@}
 
-  ~PreviewImage() = default;
+  ~PreviewImage();
 
   //! @name Manipulators
   //@{

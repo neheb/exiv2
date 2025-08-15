@@ -50,6 +50,7 @@ namespace fs = std::filesystem;
 
 namespace Exiv2 {
 
+BasicIo::BasicIo() = default;
 BasicIo::~BasicIo() = default;
 
 void BasicIo::readOrThrow(byte* buf, size_t rcount, ErrorCode err) {
