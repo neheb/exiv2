@@ -66,11 +66,11 @@ class CiffComponent {
   //! @name Creators
   //@{
   //! Default constructor
-  CiffComponent() = default;
+  CiffComponent();
   //! Constructor taking a tag and directory
   CiffComponent(uint16_t tag, uint16_t dir);
   //! Virtual destructor.
-  virtual ~CiffComponent() = default;
+  virtual ~CiffComponent();
   //@}
 
   //! @name Manipulators

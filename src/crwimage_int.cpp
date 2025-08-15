@@ -120,6 +120,9 @@ const CrwSubDir CrwMap::crwSubDir_[] = {
     {0x2807, 0x300a}, {0x2804, 0x300a}, {0x300a, 0x0000}, {0x0000, 0xffff},
 };
 
+CiffComponent::CiffComponent() = default;
+CiffComponent::~CiffComponent() = default;
+
 CiffComponent::CiffComponent(uint16_t tag, uint16_t dir) : dir_(dir), tag_(tag) {
 }
 
