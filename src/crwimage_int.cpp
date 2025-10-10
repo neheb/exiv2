@@ -404,7 +404,7 @@ void CiffComponent::print(std::ostream& os, ByteOrder byteOrder, const std::stri
   doPrint(os, byteOrder, prefix);
 }
 
-void CiffComponent::doPrint(std::ostream& os, ByteOrder byteOrder, const std::string& prefix) const {
+void CiffComponent::doPrint(std::ostream& os, ByteOrder byteOrder, std::string_view prefix) const {
   os << stringFormat("{}{} = 0x{:04x}, {} = 0x{:04x}, {} = {}, {} = {}, {} = {}\n", prefix, _("tag"), tagId(), _("dir"),
                      dir(), _("type"), TypeInfo::typeName(typeId()), _("size"), size_, _("offset"), offset_);
 
@@ -417,10 +417,10 @@ void CiffComponent::doPrint(std::ostream& os, ByteOrder byteOrder, const std::st
   }
 }  // CiffComponent::doPrint
 
-void CiffDirectory::doPrint(std::ostream& os, ByteOrder byteOrder, const std::string& prefix) const {
+void CiffDirectory::doPrint(std::ostream& os, ByteOrder byteOrder, std::string_view prefix) const {
   CiffComponent::doPrint(os, byteOrder, prefix);
   for (auto&& component : components_) {
-    component->print(os, byteOrder, prefix + "   ");
+    component->print(os, byteOrder, stringFormat("{}    ", prefix));
   }
 }  // CiffDirectory::doPrint
 

@@ -2584,7 +2584,7 @@ const TagInfo* tagInfo(uint16_t tag, IfdId ifdId) {
   return nullptr;
 }  // tagInfo
 
-const TagInfo* tagInfo(const std::string& tagName, IfdId ifdId) {
+const TagInfo* tagInfo(std::string_view tagName, IfdId ifdId) {
   if (tagName.empty())
     return nullptr;
   if (auto ti = tagList(ifdId)) {

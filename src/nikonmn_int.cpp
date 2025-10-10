@@ -1935,7 +1935,7 @@ std::ostream& Nikon3MakerNote::printLensId4(std::ostream& os, const Value& value
 }
 
 std::ostream& Nikon3MakerNote::printLensId(std::ostream& os, const Value& value, const ExifData* metadata,
-                                           [[maybe_unused]] const std::string& group) {
+                                           [[maybe_unused]] std::string_view group) {
 #ifdef EXV_HAVE_LENSDATA
 // 8< - - - 8< do not remove this line >8 - - - >8
 //------------------------------------------------------------------------------
@@ -3159,7 +3159,7 @@ std::ostream& Nikon3MakerNote::printLensId(std::ostream& os, const Value& value,
       "MaxApertureAtMaxFocal", "MCUVersion",
   };
 
-  const std::string pre = std::string("Exif.") + group + std::string(".");
+  const auto pre = stringFormat("Exif.{}.", group);
   for (unsigned int i = 0; i < 7; ++i) {
     ExifKey key(pre + std::string(tags[i]));
     auto md = metadata->findKey(key);

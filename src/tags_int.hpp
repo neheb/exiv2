@@ -364,7 +364,7 @@ const TagInfo* tagList(IfdId ifdId);
 //! Return the tag info for \em tag and \em ifdId
 const TagInfo* tagInfo(uint16_t tag, IfdId ifdId);
 //! Return the tag info for \em tagName and \em ifdId
-const TagInfo* tagInfo(const std::string& tagName, IfdId ifdId);
+const TagInfo* tagInfo(std::string_view tagName, IfdId ifdId);
 /*!
   @brief Return the tag number for one combination of IFD id and tagName.
          If the tagName is not known, it expects tag names in the

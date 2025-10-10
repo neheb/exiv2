@@ -264,7 +264,7 @@ class CiffComponent {
   //! Implements decode()
   virtual void doDecode(Image& image, ByteOrder byteOrder) const = 0;
   //! Implements print(). The default implementation prints the entry.
-  virtual void doPrint(std::ostream& os, ByteOrder byteOrder, const std::string& prefix) const;
+  virtual void doPrint(std::ostream& os, ByteOrder byteOrder, std::string_view prefix) const;
   //! Implements empty(). Default implementation returns true if size is 0.
   [[nodiscard]] virtual bool doEmpty() const;
   //! Implements findComponent(). The default implementation checks the entry.
@@ -359,7 +359,7 @@ class CiffDirectory : public CiffComponent {
   void doDecode(Image& image, ByteOrder byteOrder) const override;
 
   // See base class comment
-  void doPrint(std::ostream& os, ByteOrder byteOrder, const std::string& prefix) const override;
+  void doPrint(std::ostream& os, ByteOrder byteOrder, std::string_view prefix) const override;
 
   //! See base class comment. A directory is empty if it has no components.
   [[nodiscard]] bool doEmpty() const override;
