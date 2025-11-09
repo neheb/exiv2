@@ -79,7 +79,14 @@ using TagDetailsBitmask = std::pair<uint32_t, const char*>;
          {{0, N_("Center")}, {1, N_("Top")}, {2, N_("Upper-right")},
          {3, N_("Right")}})
  */
-using TagDetailsBitlistSorted = std::pair<uint32_t, const char*>;
+struct TagDetailsBitlistSorted {
+  uint32_t first;
+  const char* second;
+
+  bool operator<(uint32_t num) const noexcept {
+    return first < num;
+  }
+};
 
 /*!
   @brief Helper structure for lookup tables for translations of controlled
@@ -238,16 +245,14 @@ template <size_t N, const TagDetailsBitlistSorted (&array)[N]>
 std::ostream& printTagBitlistAllLE(std::ostream& os, const Value& value, const ExifData*) {
   static_assert(N > 0, "Passed zero length TagDetailsBitlistSorted");
 
-  uint32_t vN = 0;
   uint32_t currentVNBit = 0;
-  size_t lastArrayPos = 0;  // Prevents unneeded searching of array
   constexpr auto maxArrayBit = (array + N - 1)->first;
   auto allVNZero = true;
   auto useSep = false;
 
   // For each value
   for (size_t i = 0; i < value.count(); i++) {
-    vN = value.toUint32(i);
+    auto vN = value.toUint32(i);
     if (vN == 0) {  // If all bits zero, then nothing to process
       currentVNBit += 8;
       continue;
@@ -263,21 +268,13 @@ std::ostream& printTagBitlistAllLE(std::ostream& os, const Value& value, const E
         continue;
       }
 
-      // Check to see if the numbered bit is found in the array
-      for (size_t k = lastArrayPos; k < N; ++k) {
-        auto [bit, label] = *(array + k);
-
-        if (currentVNBit == bit) {
-          lastArrayPos = k;
-          if (useSep) {
-            os << ", " << _(label);
-          } else {
-            os << _(label);
-            useSep = true;
-          }
-          break;
-        }
-      }
+      // Binary search over the lookup table
+      auto it = std::lower_bound(array, array + N, currentVNBit);
+      if (it != array + N && it->first == currentVNBit)
+        os << (useSep ? ", " : "") << _(it->second);
+      else
+        os << (useSep ? ", " : "") << "[" << currentVNBit << "]";
+      useSep = true;
     }
   }
   if (allVNZero)
