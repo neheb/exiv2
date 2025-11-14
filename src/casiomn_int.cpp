@@ -150,31 +150,26 @@ std::ostream& CasioMakerNote::print0x0006(std::ostream& os, const Value& value, 
 
 std::ostream& CasioMakerNote::print0x0015(std::ostream& os, const Value& value, const ExifData*) {
   // format is:  "YYMM#00#00DDHH#00#00MM#00#00#00#00" or  "YYMM#00#00DDHH#00#00MMSS#00#00#00"
-  std::vector<char> numbers;
+  std::string digits;
+
   for (size_t i = 0; i < value.size(); i++) {
-    const auto l = value.toInt64(i);
-    if (l != 0) {
-      numbers.push_back(l);
-    }
+    char c = static_cast<char>(value.toInt64(i));
+    if (c >= '0' && c <= '9')
+      digits.push_back(c);
   }
 
-  if (numbers.size() >= 10) {
-    // year
-    long l = ((numbers[0] - 48) * 10) + (numbers[1] - 48);
-    if (l < 70)
-      l += 2000;
-    else
-      l += 1900;
-    os << l << ":";
-    // month, day, hour, minutes
-    os << numbers[2] << numbers[3] << ":" << numbers[4] << numbers[5] << " " << numbers[6] << numbers[7] << ":"
-       << numbers[8] << numbers[9];
-    // optional seconds
-    if (numbers.size() == 12) {
-      os << ":" << numbers[10] << numbers[11];
-    }
-  } else
-    os << value;
+  if (digits.size() < 10)
+    return os << value;
+
+  int year = (digits[0] - '0') * 10 + (digits[1] - '0');
+  year += (year < 70) ? 2000 : 1900;
+
+  os << year << ":" << digits[2] << digits[3] << ":" << digits[4] << digits[5] << " " << digits[6] << digits[7] << ":"
+     << digits[8] << digits[9];
+
+  if (digits.size() >= 12)
+    os << ":" << digits[10] << digits[11];
+
   return os;
 }
 
@@ -447,27 +442,23 @@ constexpr TagInfo Casio2MakerNote::tagInfo_[] = {
 
 std::ostream& Casio2MakerNote::print0x2001(std::ostream& os, const Value& value, const ExifData*) {
   // format is:  "YYMM#00#00DDHH#00#00MM#00#00#00#00"
-  std::vector<char> numbers;
+  std::string digits;
+
   for (size_t i = 0; i < value.size(); i++) {
-    const auto l = value.toInt64(i);
-    if (l != 0) {
-      numbers.push_back(l);
-    }
+    char c = static_cast<char>(value.toInt64(i));
+    if (c >= '0' && c <= '9')
+      digits.push_back(c);
   }
 
-  if (numbers.size() >= 10) {
-    // year
-    long l = ((numbers[0] - 48) * 10) + (numbers[1] - 48);
-    if (l < 70)
-      l += 2000;
-    else
-      l += 1900;
-    os << l << ":";
-    // month, day, hour, minutes
-    os << numbers[2] << numbers[3] << ":" << numbers[4] << numbers[5] << " " << numbers[6] << numbers[7] << ":"
-       << numbers[8] << numbers[9];
-  } else
-    os << value;
+  if (digits.size() < 10)
+    return os << value;
+
+  int year = (digits[0] - '0') * 10 + (digits[1] - '0');
+  year += (year < 70) ? 2000 : 1900;
+
+  os << year << ":" << digits[2] << digits[3] << ":" << digits[4] << digits[5] << " " << digits[6] << digits[7] << ":"
+     << digits[8] << digits[9];
+
   return os;
 }
 
