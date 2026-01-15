@@ -40,7 +40,7 @@ class EXIV2API Value {
   //! Constructor, taking a type id to initialize the base class with
   explicit Value(TypeId typeId);
   //! Virtual destructor.
-  virtual ~Value() = default;
+  virtual ~Value();
   //@}
 
   //! @name Manipulators

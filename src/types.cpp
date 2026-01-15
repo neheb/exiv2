@@ -89,6 +89,8 @@ size_t TypeInfo::typeSize(TypeId typeId) {
   return 0;
 }
 
+DataBuf::DataBuf() = default;
+
 DataBuf::DataBuf(size_t size) : pData_(size) {
 }
 

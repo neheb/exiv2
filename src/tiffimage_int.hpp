@@ -39,7 +39,7 @@ class TiffHeaderBase {
   //! Constructor taking \em tag, \em size and default \em byteOrder and \em offset.
   TiffHeaderBase(uint16_t tag, uint32_t size, ByteOrder byteOrder, uint32_t offset);
   //! Virtual destructor.
-  virtual ~TiffHeaderBase() = default;
+  virtual ~TiffHeaderBase();
   TiffHeaderBase(const TiffHeaderBase&) = delete;
   TiffHeaderBase& operator=(const TiffHeaderBase&) = delete;
   //@}

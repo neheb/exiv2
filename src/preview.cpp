@@ -955,6 +955,8 @@ PreviewImage::PreviewImage(PreviewProperties properties, DataBuf&& data) :
 PreviewImage::PreviewImage(const PreviewImage& rhs) : properties_(rhs.properties_), preview_(rhs.pData(), rhs.size()) {
 }
 
+PreviewImage::~PreviewImage() = default;
+
 PreviewImage& PreviewImage::operator=(const PreviewImage& rhs) {
   if (this == &rhs)
     return *this;

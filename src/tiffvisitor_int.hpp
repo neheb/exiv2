@@ -4,10 +4,8 @@
 #define TIFFVISITOR_INT_HPP_
 
 // *****************************************************************************
-// included header files
-#include "exif.hpp"
 
-#include "tiffcomposite_int.hpp"
+#include "tifffwd_int.hpp"
 
 #include <array>
 #include <map>
@@ -15,6 +13,7 @@
 // *****************************************************************************
 // namespace extensions
 namespace Exiv2 {
+class ExifData;
 class IptcData;
 class XmpData;
 
@@ -57,7 +56,7 @@ class TiffVisitor {
   //@{
   TiffVisitor() = default;
   //! Virtual destructor
-  virtual ~TiffVisitor() = default;
+  virtual ~TiffVisitor();
   TiffVisitor(const TiffVisitor&) = delete;
   TiffVisitor& operator=(const TiffVisitor&) = delete;
   //@}
@@ -134,8 +133,10 @@ class TiffFinder : public TiffVisitor {
   //! @name Creators
   //@{
   //! Constructor, taking \em tag and \em group of the component to find.
-  constexpr TiffFinder(uint16_t tag, IfdId group) : tag_(tag), group_(group) {
-  }
+  TiffFinder(uint16_t tag, IfdId group);
+
+  //! Virtual destructor
+  ~TiffFinder() override;
   //@}
 
   //! @name Manipulators
@@ -173,7 +174,7 @@ class TiffFinder : public TiffVisitor {
     @brief Return the search result. 0 if no TIFF component was found
            for the tag and group combination.
    */
-  [[nodiscard]] TiffComponent* result() const {
+  [[nodiscard]] auto result() const {
     return tiffComponent_;
   }
   //@}
@@ -202,6 +203,8 @@ class TiffCopier : public TiffVisitor {
     @param pPrimaryGroups Pointer to the list of primary groups.
    */
   TiffCopier(TiffComponent* pRoot, uint32_t root, const TiffHeaderBase* pHeader, PrimaryGroups pPrimaryGroups);
+  //! Virtual destructor
+  ~TiffCopier() override;
   //@}
 
   //! @name Manipulators
@@ -255,6 +258,8 @@ class TiffDecoder : public TiffVisitor {
    */
   TiffDecoder(ExifData& exifData, IptcData& iptcData, XmpData& xmpData, TiffComponent* pRoot,
               FindDecoderFct findDecoderFct);
+  //! Virtual destructor
+  ~TiffDecoder() override;
   //@}
 
   //! @name Manipulators
@@ -341,13 +346,13 @@ class TiffEncoder : public TiffVisitor {
            to, the image with the metadata to encode and a function to
            find special encoders.
    */
-  TiffEncoder(ExifData exifData, const IptcData& iptcData, const XmpData& xmpData, TiffComponent* pRoot,
-              bool isNewImage, PrimaryGroups pPrimaryGroups, const TiffHeaderBase* pHeader,
+  TiffEncoder(std::unique_ptr<ExifData> exifData, const IptcData& iptcData, const XmpData& xmpData,
+              TiffComponent* pRoot, bool isNewImage, PrimaryGroups pPrimaryGroups, const TiffHeaderBase* pHeader,
               FindEncoderFct findEncoderFct);
   TiffEncoder(const TiffEncoder&) = delete;
   TiffEncoder& operator=(const TiffEncoder&) = delete;
   //! Virtual destructor
-  ~TiffEncoder() override = default;
+  ~TiffEncoder() override;
   //@}
 
   //! @name Manipulators
@@ -439,7 +444,7 @@ class TiffEncoder : public TiffVisitor {
     tree is then traversed and metadata from the image is used to encode
     each existing component.
   */
-  void add(TiffComponent* pRootDir, TiffComponent::UniquePtr pSourceDir, uint32_t root);
+  void add(TiffComponent* pRootDir, std::unique_ptr<TiffComponent> pSourceDir, uint32_t root);
   //! Set the dirty flag and end of traversing signal.
   void setDirty(bool flag = true);
   //@}
@@ -487,7 +492,7 @@ class TiffEncoder : public TiffVisitor {
            entries are encoded. It takes care of type and count changes
            and size shrinkage for non-intrusive writing.
    */
-  static uint32_t updateDirEntry(byte* buf, ByteOrder byteOrder, const TiffComponent::SharedPtr& tiffComponent);
+  static uint32_t updateDirEntry(byte* buf, ByteOrder byteOrder, const std::shared_ptr<TiffComponent>& tiffComponent);
   /*!
     @brief Check if the tag is an image tag of an existing image. Such
            tags are copied from the original image and can't be modified.
@@ -501,21 +506,21 @@ class TiffEncoder : public TiffVisitor {
   //@}
 
   // DATA
-  ExifData exifData_;                        //!< Copy of the Exif data to encode
-  const IptcData& iptcData_;                 //!< IPTC data to encode, just a reference
-  const XmpData& xmpData_;                   //!< XMP data to encode, just a reference
-  bool del_{true};                           //!< Indicates if Exif data entries should be deleted after encoding
-  const TiffHeaderBase* pHeader_;            //!< TIFF image header
-  TiffComponent* pRoot_;                     //!< Root element of the composite
-  bool isNewImage_;                          //!< True if the TIFF image is created from scratch
-  PrimaryGroups pPrimaryGroups_;             //!< List of primary image groups
-  TiffComponent::UniquePtr pSourceTree_;     //!< Parsed source tree for reference
-  ByteOrder byteOrder_;                      //!< Byteorder for encoding
-  ByteOrder origByteOrder_;                  //!< Byteorder as set in the c'tor
-  FindEncoderFct findEncoderFct_;            //!< Ptr to the function to find special encoding functions
-  std::string make_;                         //!< Camera make, determined from the tags to encode
-  bool dirty_{false};                        //!< Signals if any tag is deleted or allocated
-  WriteMethod writeMethod_{wmNonIntrusive};  //!< Write method used.
+  std::unique_ptr<ExifData> exifData_;          //!< Copy of the Exif data to encode
+  const IptcData& iptcData_;                    //!< IPTC data to encode, just a reference
+  const XmpData& xmpData_;                      //!< XMP data to encode, just a reference
+  bool del_{true};                              //!< Indicates if Exif data entries should be deleted after encoding
+  const TiffHeaderBase* pHeader_;               //!< TIFF image header
+  TiffComponent* pRoot_;                        //!< Root element of the composite
+  bool isNewImage_;                             //!< True if the TIFF image is created from scratch
+  PrimaryGroups pPrimaryGroups_;                //!< List of primary image groups
+  std::unique_ptr<TiffComponent> pSourceTree_;  //!< Parsed source tree for reference
+  ByteOrder byteOrder_;                         //!< Byteorder for encoding
+  ByteOrder origByteOrder_;                     //!< Byteorder as set in the c'tor
+  FindEncoderFct findEncoderFct_;               //!< Ptr to the function to find special encoding functions
+  std::string make_;                            //!< Camera make, determined from the tags to encode
+  bool dirty_{false};                           //!< Signals if any tag is deleted or allocated
+  WriteMethod writeMethod_{wmNonIntrusive};     //!< Write method used.
 
 };  // class TiffEncoder
 
@@ -530,7 +535,7 @@ class TiffRwState {
   //! @name Creators
   //@{
   //! Constructor.
-  constexpr TiffRwState(ByteOrder byteOrder, size_t baseOffset) : byteOrder_(byteOrder), baseOffset_(baseOffset) {
+  TiffRwState(ByteOrder byteOrder, size_t baseOffset) : byteOrder_(byteOrder), baseOffset_(baseOffset) {
   }
   //@}
 
@@ -583,6 +588,9 @@ class TiffReader : public TiffVisitor {
                      base offset.
    */
   TiffReader(const byte* pData, size_t size, TiffComponent* pRoot, TiffRwState state);
+
+  //! Virtual destructor
+  ~TiffReader() override;
   //@}
 
   //! @name Manipulators

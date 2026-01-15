@@ -65,7 +65,7 @@ class TiffPathItem {
   //! @name Creators
   //@{
   //! Constructor
-  constexpr TiffPathItem(uint32_t extendedTag, IfdId group) : extendedTag_(extendedTag), group_(group) {
+  TiffPathItem(uint32_t extendedTag, IfdId group) : extendedTag_(extendedTag), group_(group) {
   }
   //@}
 
@@ -161,10 +161,9 @@ class TiffComponent {
   //! @name Creators
   //@{
   //! Constructor
-  constexpr TiffComponent(uint16_t tag, IfdId group) : tag_(tag), group_(group) {
-  }
+  TiffComponent(uint16_t tag, IfdId group);
   //! Virtual destructor.
-  virtual ~TiffComponent() = default;
+  virtual ~TiffComponent();
   //@}
 
   //! @name Manipulators
@@ -821,7 +820,7 @@ class TiffDirectory : public TiffComponent {
   //! Default constructor
   TiffDirectory(uint16_t tag, IfdId group, bool hasNext = true);
   //! Virtual destructor
-  ~TiffDirectory() override = default;
+  ~TiffDirectory() override;
   //@}
 
   //! @name NOT implemented
@@ -928,7 +927,7 @@ class TiffSubIfd : public TiffEntryBase {
   //! Default constructor
   TiffSubIfd(uint16_t tag, IfdId group, IfdId newGroup);
   //! Virtual destructor
-  ~TiffSubIfd() override = default;
+  ~TiffSubIfd() override;
   //@}
 
   //! @name NOT implemented
@@ -1007,6 +1006,7 @@ class TiffMnEntry : public TiffEntryBase {
   //@{
   //! Default constructor
   TiffMnEntry(uint16_t tag, IfdId group, IfdId mnGroup);
+  ~TiffMnEntry() override;
 
  protected:
   //! @name Protected Manipulators
@@ -1042,8 +1042,8 @@ class TiffMnEntry : public TiffEntryBase {
 
  private:
   // DATA
-  IfdId mnGroup_;  //!< New group for concrete mn
-  UniquePtr mn_;   //!< The Makernote
+  IfdId mnGroup_;                         //!< New group for concrete mn
+  std::unique_ptr<TiffIfdMakernote> mn_;  //!< The Makernote
 };
 
 /*!
@@ -1259,7 +1259,7 @@ class TiffBinaryArray : public TiffEntryBase {
   //! Constructor for a complex binary array
   TiffBinaryArray(uint16_t tag, IfdId group, const ArraySet* arraySet, size_t setSize, CfgSelFct cfgSelFct);
   //! Virtual destructor
-  ~TiffBinaryArray() override = default;
+  ~TiffBinaryArray() override;
   //@}
 
   //! @name NOT implemented

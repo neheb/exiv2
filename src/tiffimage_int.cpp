@@ -4,6 +4,7 @@
 #include "basicio.hpp"
 #include "config.h"
 #include "error.hpp"
+#include "exif.hpp"
 #include "i18n.h"  // NLS support.
 #include "image_int.hpp"
 #include "makernote_int.hpp"
@@ -2048,7 +2049,7 @@ ByteOrder TiffParserWorker::decode(ExifData& exifData, IptcData& iptcData, XmpDa
   std::unique_ptr<TiffHeaderBase> ph;
   if (!pHeader) {
     ph = std::make_unique<TiffHeader>();
-    pHeader = ph.get();
+    pHeader = ph.release();
   }
 
   if (auto rootDir = parse(pData, size, root, pHeader)) {
@@ -2075,7 +2076,8 @@ WriteMethod TiffParserWorker::encode(BasicIo& io, const byte* pData, size_t size
   auto primaryGroups = findPrimaryGroups(parsedTree);
   if (parsedTree) {
     // Attempt to update existing TIFF components based on metadata entries
-    TiffEncoder encoder(exifData, iptcData, xmpData, parsedTree.get(), false, primaryGroups, pHeader, findEncoderFct);
+    TiffEncoder encoder(std::make_unique<ExifData>(exifData), iptcData, xmpData, parsedTree.get(), false, primaryGroups,
+                        pHeader, findEncoderFct);
     parsedTree->accept(encoder);
     if (!encoder.dirty())
       writeMethod = wmNonIntrusive;
@@ -2088,8 +2090,8 @@ WriteMethod TiffParserWorker::encode(BasicIo& io, const byte* pData, size_t size
       parsedTree->accept(copier);
     }
     // Add entries from metadata to composite
-    TiffEncoder encoder(exifData, iptcData, xmpData, createdTree.get(), !parsedTree, std::move(primaryGroups), pHeader,
-                        findEncoderFct);
+    TiffEncoder encoder(std::make_unique<ExifData>(exifData), iptcData, xmpData, createdTree.get(), !parsedTree,
+                        std::move(primaryGroups), pHeader, findEncoderFct);
     encoder.add(createdTree.get(), std::move(parsedTree), root);
     // Write binary representation from the composite tree
     DataBuf header = pHeader->write();
@@ -2160,6 +2162,8 @@ PrimaryGroups TiffParserWorker::findPrimaryGroups(const TiffComponent::UniquePtr
 TiffHeaderBase::TiffHeaderBase(uint16_t tag, uint32_t size, ByteOrder byteOrder, uint32_t offset) :
     tag_(tag), size_(size), byteOrder_(byteOrder), offset_(offset) {
 }
+
+TiffHeaderBase::~TiffHeaderBase() = default;
 
 bool TiffHeaderBase::read(const byte* pData, size_t size) {
   if (!pData || size < 8)
