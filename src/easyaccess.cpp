@@ -189,7 +189,6 @@ ExifData::const_iterator isoSpeed(const ExifData& ed) {
         break;
       }
     }
-    break;
   }
 
   return md;
