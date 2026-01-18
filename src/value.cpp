@@ -446,9 +446,7 @@ XmpValue::XmpStruct XmpValue::xmpStruct() const {
 }
 
 size_t XmpValue::copy(byte* buf, ByteOrder /*byteOrder*/) const {
-  std::ostringstream os;
-  write(os);
-  std::string s = os.str();
+  auto s = toString();
   if (!s.empty())
     std::copy(s.begin(), s.end(), buf);
   return s.size();
@@ -460,9 +458,8 @@ int XmpValue::read(const byte* buf, size_t len, ByteOrder /*byteOrder*/) {
 }
 
 size_t XmpValue::size() const {
-  std::ostringstream os;
-  write(os);
-  return os.str().size();
+  auto s = toString();
+  return s.size();
 }
 
 XmpTextValue::XmpTextValue() : XmpValue(xmpText) {
