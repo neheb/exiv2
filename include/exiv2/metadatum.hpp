@@ -70,9 +70,7 @@ class EXIV2API Key {
            the output operator for %Key,
            operator<<(std::ostream &os, const Key &key).
   */
-  std::ostream& write(std::ostream& os) const {
-    return os << key();
-  }
+  std::ostream& write(std::ostream& os) const;
   //@}
 
  protected:
