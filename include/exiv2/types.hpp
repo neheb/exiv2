@@ -11,6 +11,7 @@
 // standard includes
 #include <algorithm>
 #include <cstdint>
+#include <iosfwd>
 #include <sstream>
 #include <vector>
 

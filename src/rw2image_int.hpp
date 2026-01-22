@@ -9,7 +9,9 @@
 
 // *****************************************************************************
 // namespace extensions
-namespace Exiv2::Internal {
+namespace Exiv2 {
+class DataBuf;
+namespace Internal {
 // *****************************************************************************
 // class definitions
 
@@ -32,6 +34,7 @@ class Rw2Header : public TiffHeaderBase {
 
 };  // class Rw2Header
 
-}  // namespace Exiv2::Internal
+}  // namespace Internal
+}  // namespace Exiv2
 
 #endif  // #ifndef RW2IMAGE_INT_HPP_

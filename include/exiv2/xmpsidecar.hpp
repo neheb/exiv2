@@ -9,6 +9,9 @@
 // included header files
 #include "image.hpp"
 
+#include <memory>
+#include <string>
+
 // *****************************************************************************
 // namespace extensions
 namespace Exiv2 {

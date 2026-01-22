@@ -14,6 +14,11 @@
 #include <atomic>
 #include <map>
 
+#include <cstdint>
+#include <memory>
+#include <utility>
+#include <vector>
+
 // *****************************************************************************
 // namespace extensions
 namespace Exiv2 {
