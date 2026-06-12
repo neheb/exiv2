@@ -12,6 +12,7 @@
 
 namespace Exiv2 {
 // Forward declarations
+class BasicIo;
 class IptcData;
 
 /// @brief Helper class, has methods to deal with %Photoshop "Information Resource Blocks" (IRBs).
@@ -65,6 +66,14 @@ struct EXIV2API Photoshop {
   /// @param iptcData   Iptc data to embed, may be empty
   /// @return A data buffer containing the new IRB buffer, may have 0 size
   static DataBuf setIptcIrb(const byte* pPsData, size_t sizePsData, const IptcData& iptcData);
+
+  /// @brief Write a complete Photoshop IRB resource block to an output stream.
+  /// @param out         Output stream
+  /// @param resourceId  Resource ID
+  /// @param data        Payload data
+  /// @param dataSize    Size of payload data
+  /// @return The total number of bytes written (header + data + padding)
+  static uint32_t writeIrb(BasicIo& out, uint16_t resourceId, const byte* data, size_t dataSize);
 };
 }  // namespace Exiv2
 

@@ -2,7 +2,9 @@
 
 #include "photoshop.hpp"
 
+#include "basicio.hpp"
 #include "enforce.hpp"
+#include "error.hpp"
 #include "image.hpp"
 #include "safe_op.hpp"
 
@@ -130,6 +132,28 @@ int Photoshop::locateIptcIrb(const byte* pPsData, size_t sizePsData, const byte*
 int Photoshop::locatePreviewIrb(const byte* pPsData, size_t sizePsData, const byte** record, uint32_t& sizeHdr,
                                 uint32_t& sizeData) {
   return locateIrb(pPsData, sizePsData, preview_, record, sizeHdr, sizeData);
+}
+
+uint32_t Photoshop::writeIrb(BasicIo& out, uint16_t resourceId, const byte* data, size_t dataSize) {
+  byte buf[12];
+  std::copy_n(irbId_[0], 4, buf);
+  us2Data(buf + 4, resourceId, bigEndian);
+  us2Data(buf + 6, 0, bigEndian);
+  ul2Data(buf + 8, static_cast<uint32_t>(dataSize), bigEndian);
+
+  if (out.write(buf, 12) != 12)
+    throw Error(ErrorCode::kerImageWriteFailed);
+  if (out.write(data, dataSize) != dataSize)
+    throw Error(ErrorCode::kerImageWriteFailed);
+
+  auto total = static_cast<uint32_t>(12 + dataSize);
+  if (dataSize & 1) {
+    byte pad = 0;
+    if (out.write(&pad, 1) != 1)
+      throw Error(ErrorCode::kerImageWriteFailed);
+    total++;
+  }
+  return total;
 }
 
 DataBuf Photoshop::setIptcIrb(const byte* pPsData, size_t sizePsData, const IptcData& iptcData) {
