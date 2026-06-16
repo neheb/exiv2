@@ -38,9 +38,9 @@ constexpr unsigned char pngBlank[] = {
     0xe7, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82,
 };
 
-const auto nullComp = reinterpret_cast<const Exiv2::byte*>("\0\0");
-const auto typeExif = reinterpret_cast<const Exiv2::byte*>("eXIf");
-const auto typeICCP = reinterpret_cast<const Exiv2::byte*>("iCCP");
+const unsigned char nullComp[] = {'\0', '\0'};
+const unsigned char typeExif[] = {'e', 'X', 'I', 'f'};
+const unsigned char typeICCP[] = {'i', 'C', 'C', 'P'};
 bool compare(std::string_view str, const Exiv2::DataBuf& buf) {
   const auto minlen = std::min<size_t>(str.size(), buf.size());
   return buf.cmpBytes(0, str.data(), minlen) == 0;

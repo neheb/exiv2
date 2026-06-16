@@ -17,8 +17,8 @@ class IptcData;
 /// @brief Helper class, has methods to deal with %Photoshop "Information Resource Blocks" (IRBs).
 struct EXIV2API Photoshop {
   // Todo: Public for now
-  static const char irbId_[4][4];               //!< %Photoshop IRB markers
-  static const char ps3Id_[14];                 //!< %Photoshop marker
+  static const byte irbId_[4][4];               //!< %Photoshop IRB markers
+  static const byte ps3Id_[14];                 //!< %Photoshop marker
   static constexpr uint16_t iptc_ = 0x0404;     //!< %Photoshop IPTC marker
   static constexpr uint16_t preview_ = 0x040c;  //!< %Photoshop preview marker
 

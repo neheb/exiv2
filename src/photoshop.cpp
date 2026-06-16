@@ -15,14 +15,14 @@
 
 namespace Exiv2 {
 
-const char Photoshop::irbId_[4][4] = {
+const byte Photoshop::irbId_[4][4] = {
     {'8', 'B', 'I', 'M'},
     {'A', 'g', 'H', 'g'},
     {'D', 'C', 'S', 'R'},
     {'P', 'H', 'U', 'T'},
 };
 
-const char Photoshop::ps3Id_[14] = {'P', 'h', 'o', 't', 'o', 's', 'h', 'o', 'p', ' ', '3', '.', '0', '\0'};
+const byte Photoshop::ps3Id_[14] = {'P', 'h', 'o', 't', 'o', 's', 'h', 'o', 'p', ' ', '3', '.', '0', '\0'};
 
 bool Photoshop::isIrb(const byte* pPsData) {
   if (pPsData == nullptr)
