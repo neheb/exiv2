@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import unittest
+import pytest
 import os.path
 import shutil
 
@@ -12,8 +12,7 @@ RESOURCE_FORK_EXISTS = os.path.exists(
 )
 
 
-@unittest.skipUnless(RESOURCE_FORK_EXISTS,
-                     "File system does not support resource forks")
+@pytest.mark.skipif(not RESOURCE_FORK_EXISTS, reason="File system does not support resource forks")
 @system_tests.CopyFiles("$data_path/exiv2-bug836.eps")
 class WriteMetadataDestroysResourceForkOnMacOSXForBigFiles(
         metaclass=system_tests.CaseMeta):

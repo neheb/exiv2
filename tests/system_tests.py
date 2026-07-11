@@ -8,7 +8,6 @@ import threading
 import sys
 import shutil
 import string
-import unittest
 
 from bash_tests import utils as BT
 
@@ -47,6 +46,11 @@ def _disjoint_dict_merge(d1, d2):
 
 
 class CasePreservingConfigParser(configparser.ConfigParser):
+    """
+    pytest should never try to collect this helper class.
+    """
+    __test__ = False
+
     r""" ConfigParser where the keys are case sensitive.
 
     The default ConfigParser converts all options in the config file with their
@@ -280,6 +284,9 @@ class FileDecoratorBase(object):
     setUp_file_action returning f.capitalized()) and that the old
     tearDown is called after the new one runs.
     """
+
+    # pytest should never try to collect the decorator classes themselves
+    __test__ = False
 
     #: Name of the attribute in the decorated child class where the list of
     #: files is stored
@@ -656,7 +663,7 @@ def test_run(self):
     self.post_tests_hook()
 
 
-class Case(unittest.TestCase):
+class Case(object):
     """
     System test case base class, provides the functionality to interpret static
     class members as system tests.
@@ -674,13 +681,72 @@ class Case(unittest.TestCase):
 
     inherit_env = True
 
+    # ------------------------------------------------------------------
+    # pytest compatibility: the data-driven test cases are plain classes
+    # (not unittest.TestCase subclasses), so we implement the few assert
+    # helpers we rely on ourselves and bridge the unittest-style
+    # setUp()/tearDown() hooks to pytest's setup_method/teardown_method.
+    # ------------------------------------------------------------------
+    def assertEqual(self, first, second, msg=None):
+        assert first == second, msg
+
+    def assertTrue(self, expr, msg=None):
+        assert expr, msg
+
+    def assertFalse(self, expr, msg=None):
+        assert not expr, msg
+
+    def assertIsNotNone(self, expr, msg=None):
+        assert expr is not None, msg
+
+    def assertIn(self, member, container, msg=None):
+        assert member in container, msg
+
+    def assertNotIn(self, member, container, msg=None):
+        assert member not in container, msg
+
+    def assertListEqual(self, list1, list2, msg=None):
+        assert list1 == list2, msg
+
+    def assertMultiLineEqual(self, first, second, msg=None):
+        assert first == second, msg
+
+    def assertRegex(self, text, expected_regex, msg=None):
+        import re
+        if isinstance(expected_regex, str):
+            expected_regex = re.compile(expected_regex)
+        assert expected_regex.search(text), msg or \
+            f"regex {expected_regex!r} not found in {text!r}"
+
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         """
         This function adds the variable work_dir to the class, which is the
         path to the directory where the python source file is located.
         """
         cls.work_dir = os.path.dirname(inspect.getfile(cls))
+
+    def setUp(self):
+        """ Default setUp hook (no-op). Override in subclasses if needed. """
+
+    def tearDown(self):
+        """ Default tearDown hook (no-op). Override in subclasses if needed. """
+
+    def setup_method(self, method):
+        """
+        pytest calls this before every test method. It forwards to the
+        unittest-style setUp() hook if the test case defines one.
+        """
+        if hasattr(self, 'setUp'):
+            self.setUp()
+
+    def teardown_method(self, method):
+        """
+        pytest calls this after every test method. It forwards to the
+        unittest-style tearDown() hook if the test case defines one.
+        """
+        if hasattr(self, 'tearDown'):
+            self.tearDown()
 
     def _get_env(self):
         """ Return an appropriate env value for subprocess.Popen.

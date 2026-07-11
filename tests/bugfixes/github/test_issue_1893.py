@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import system_tests
-import unittest
+import pytest
 from tempfile import TemporaryDirectory
 import shutil
 import hashlib
@@ -11,7 +11,7 @@ import os
 bSkip = system_tests.BT.verbose_version().get("enable_bmff") != "1"
 
 if bSkip:
-    raise unittest.SkipTest("*** requires enable_bmff=1 ***")
+    pytest.skip("*** requires enable_bmff=1 ***", allow_module_level=True)
 
 file_basename = "Canon-R6-pruned.CR3"
 previews_expected = (

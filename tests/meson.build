@@ -1,5 +1,5 @@
-runner = find_program('runner.py', required: get_option('tests'))
-if not runner.found()
+pytest = find_program('pytest-3', 'pytest', required: get_option('tests'))
+if not pytest.found()
   subdir_done()
 endif
 
@@ -24,9 +24,9 @@ tests = {
 foreach n, t : tests
   test(
     n,
-    runner,
+    pytest,
     env: bindir,
-    args: ['--verbose', t],
+    args: ['-v', t],
     timeout: 1200,
     workdir: meson.current_source_dir(),
   )
@@ -34,9 +34,9 @@ endforeach
 
 test(
   'regressionTests',
-  runner,
+  pytest,
   env: bindir,
-  args: ['--verbose', 'regression_tests'],
+  args: ['-v', 'regression_tests'],
   timeout: 1200,
   is_parallel: false,
   workdir: meson.current_source_dir(),

@@ -1,7 +1,6 @@
 import os
-import unittest
 
-from system_tests import BT
+from system_tests import BT, Case
 
 
 def get_valid_files(data_dir):
@@ -186,7 +185,7 @@ def get_valid_files(data_dir):
 
 # create an empty TestCase to which we will programmatically add one test for
 # each discovered file in exiv_dir/test/data/
-class TestAllFiles(unittest.TestCase):
+class TestAllFiles(Case):
     def setUp(self):
         BT.Config.init()
 

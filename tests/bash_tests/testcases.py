@@ -1,11 +1,10 @@
 import os
 import re
-import unittest
 
 from importlib.util import find_spec
-from system_tests import BT
+from system_tests import BT, Case
 
-class TestCases(unittest.TestCase):
+class TestCases(Case):
 
 
     def setUp(self):
