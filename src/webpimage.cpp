@@ -21,8 +21,9 @@
 #include <cstring>
 #include <iostream>
 
+#ifdef EXIV2_DEBUG_MESSAGES
 namespace {
-[[maybe_unused]] std::string binaryToHex(const uint8_t* data, size_t size) {
+std::string binaryToHex(const uint8_t* data, size_t size) {
   std::stringstream hexOutput;
 
   auto tl = size / 16 * 16;
@@ -67,12 +68,14 @@ namespace {
   return hexOutput.str();
 }
 }  // namespace
+#endif
 
 // *****************************************************************************
 // class member definitions
 namespace Exiv2 {
 
-WebPImage::WebPImage(BasicIo::UniquePtr io) : Image(ImageType::webp, mdNone, std::move(io)) {
+WebPImage::WebPImage(BasicIo::UniquePtr io, const ImageCtorParams& params) :
+    Image(ImageType::webp, mdNone, std::move(io), params) {
 }  // WebPImage::WebPImage
 
 std::string WebPImage::mimeType() const {
@@ -159,6 +162,9 @@ void WebPImage::doWriteMetadata(BasicIo& outIo) {
     io_->readOrThrow(chunkId.data(), WEBP_TAG_SIZE, Exiv2::ErrorCode::kerCorruptedMetadata);
     io_->readOrThrow(size_buff.data(), WEBP_TAG_SIZE, Exiv2::ErrorCode::kerCorruptedMetadata);
     const uint32_t size_u32 = Exiv2::getULong(size_buff.data(), littleEndian);
+
+    // Check that `size_u32` is within bounds.
+    Internal::enforce(size_u32 <= io_->size() - io_->tell(), Exiv2::ErrorCode::kerCorruptedMetadata);
 
     DataBuf payload(size_u32);
     if (!payload.empty()) {
@@ -290,6 +296,10 @@ void WebPImage::doWriteMetadata(BasicIo& outIo) {
     io_->readOrThrow(size_buff.data(), 4, Exiv2::ErrorCode::kerCorruptedMetadata);
 
     const uint32_t size_u32 = Exiv2::getULong(size_buff.data(), littleEndian);
+
+    // Check that `size_u32` is within bounds.
+    Internal::enforce(size_u32 <= io_->size() - io_->tell(), Exiv2::ErrorCode::kerCorruptedMetadata);
+
     DataBuf payload(size_u32);
     io_->readOrThrow(payload.data(), size_u32, Exiv2::ErrorCode::kerCorruptedMetadata);
     if (io_->tell() % 2)
@@ -431,6 +441,10 @@ void WebPImage::printStructure(std::ostream& out, PrintStructureOption option, s
       io_->read(chunkId.data(), WEBP_TAG_SIZE);
       io_->read(size_buff, WEBP_TAG_SIZE);
       const uint32_t size = Exiv2::getULong(size_buff, littleEndian);
+
+      // Check that `size` is within bounds.
+      Internal::enforce(!offset || size <= io_->size() - io_->tell(), Exiv2::ErrorCode::kerCorruptedMetadata);
+
       DataBuf payload(offset ? size : WEBP_TAG_SIZE);  // header is different from chunks
       io_->read(payload.data(), payload.size());
 
@@ -678,8 +692,8 @@ void WebPImage::decodeChunks(uint32_t filesize) {
 
 /* =========================================== */
 
-Image::UniquePtr newWebPInstance(BasicIo::UniquePtr io, bool /*create*/) {
-  auto image = std::make_unique<WebPImage>(std::move(io));
+Image::UniquePtr newWebPInstance(BasicIo::UniquePtr io, const ImageCtorParams& params) {
+  auto image = std::make_unique<WebPImage>(std::move(io), params);
   if (!image->good()) {
     return nullptr;
   }
@@ -687,18 +701,18 @@ Image::UniquePtr newWebPInstance(BasicIo::UniquePtr io, bool /*create*/) {
 }
 
 bool isWebPType(BasicIo& iIo, bool /*advance*/) {
-  if (iIo.size() < 12) {
-    return false;
-  }
   const int32_t len = 4;
   constexpr std::array<byte, len> RiffImageId{'R', 'I', 'F', 'F'};
   constexpr std::array<byte, len> WebPImageId{'W', 'E', 'B', 'P'};
   std::array<byte, len> webp;
   std::array<byte, len> data;
   std::array<byte, len> riff;
-  iIo.readOrThrow(riff.data(), len, Exiv2::ErrorCode::kerCorruptedMetadata);
-  iIo.readOrThrow(data.data(), len, Exiv2::ErrorCode::kerCorruptedMetadata);
-  iIo.readOrThrow(webp.data(), len, Exiv2::ErrorCode::kerCorruptedMetadata);
+  if (iIo.read(riff.data(), len) != len || iIo.error() || iIo.eof())
+    return false;
+  if (iIo.read(data.data(), len) != len || iIo.error() || iIo.eof())
+    return false;
+  if (iIo.read(webp.data(), len) != len || iIo.error() || iIo.eof())
+    return false;
   bool matched_riff = riff == RiffImageId;
   bool matched_webp = webp == WebPImageId;
   iIo.seek(-12, BasicIo::cur);
@@ -757,7 +771,7 @@ void WebPImage::inject_VP8X(BasicIo& iIo, bool has_xmp, bool has_exif, bool has_
   data[6] = (w >> 16) & 0xFF;
 
   /* set height - stored in 24bits */
-  Internal::enforce(width > 0, Exiv2::ErrorCode::kerCorruptedMetadata);
+  Internal::enforce(height > 0, Exiv2::ErrorCode::kerCorruptedMetadata);
   uint32_t h = height - 1;
   data[7] = h & 0xFF;
   data[8] = (h >> 8) & 0xFF;

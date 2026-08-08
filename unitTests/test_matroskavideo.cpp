@@ -1,38 +1,49 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <exiv2/basicio.hpp>
 #include <exiv2/matroskavideo.hpp>
+#include "unittest_utils.hpp"
+
+#include "mock_basicio.hpp"
 
 using namespace Exiv2;
 
 TEST(MatroskaVideo, canBeOpenedWithEmptyMemIo) {
   auto memIo = std::make_unique<MemIo>();
-  ASSERT_NO_THROW(MatroskaVideo mkv(std::move(memIo)));
+  ASSERT_NO_THROW(MatroskaVideo mkv(std::move(memIo), defaultImageCtorParams(false)));
 }
 
 TEST(MatroskaVideo, mimeTypeIsMkv) {
   auto memIo = std::make_unique<MemIo>();
-  MatroskaVideo mkv(std::move(memIo));
+  MatroskaVideo mkv(std::move(memIo), defaultImageCtorParams(false));
 
   ASSERT_EQ("video/matroska", mkv.mimeType());
 }
 
 TEST(MatroskaVideo, isMkvTypewithEmptyDataReturnsFalse) {
-  MemIo memIo;
-  ASSERT_FALSE(isMkvType(memIo, false));
+  auto mockIo = makeMockIo();
+  setupReadFailure(*mockIo);
+  ASSERT_FALSE(isMkvType(*mockIo, false));
+}
+
+TEST(MatroskaVideo, isMkvTypeWithValidSignatureReturnsTrue) {
+  auto mockIo = makeMockIo();
+  setupRead(*mockIo, {0x1a, 0x45, 0xdf, 0xa3});
+  ASSERT_TRUE(isMkvType(*mockIo, false));
 }
 
 TEST(MatroskaVideo, emptyThrowError) {
   auto memIo = std::make_unique<MemIo>();
-  MatroskaVideo mkv(std::move(memIo));
+  MatroskaVideo mkv(std::move(memIo), defaultImageCtorParams(false));
   ASSERT_THROW(mkv.readMetadata(), Exiv2::Error);
 }
 
 TEST(MatroskaVideo, printStructurePrintsNothingAndthrowError) {
   auto memIo = std::make_unique<MemIo>();
-  MatroskaVideo mkv(std::move(memIo));
+  MatroskaVideo mkv(std::move(memIo), defaultImageCtorParams(false));
 
   std::ostringstream stream;
 
@@ -43,7 +54,7 @@ TEST(MatroskaVideo, printStructurePrintsNothingAndthrowError) {
 
 TEST(MatroskaVideo, readMetadata) {
   auto memIo = std::make_unique<MemIo>();
-  MatroskaVideo mkv(std::move(memIo));
+  MatroskaVideo mkv(std::move(memIo), defaultImageCtorParams(false));
   XmpData xmpData;
   xmpData["Xmp.video.TotalStream"] = 1000;
   xmpData["Xmp.video.TimecodeScale"] = 10001;

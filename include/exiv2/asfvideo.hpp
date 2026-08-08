@@ -37,9 +37,10 @@ class EXIV2API AsfVideo : public Image {
         auto-pointer. Callers should not continue to use the BasicIo
         instance after it is passed to this method. Use the Image::io()
         method to get a temporary reference.
+    @param params Parameters that are passed through to Image's constructor.
   */
 
-  explicit AsfVideo(std::unique_ptr<BasicIo> io);
+  explicit AsfVideo(std::unique_ptr<BasicIo> io, const ImageCtorParams& params);
   //@}
 
   //! @name Manipulators
@@ -118,10 +119,15 @@ class EXIV2API AsfVideo : public Image {
   /*!
     @brief Check for a valid tag and decode the block at the current IO
     position. Calls tagDecoder() or skips to next tag, if required.
+    @param depth Current recursion depth, to detect files with excessive nesting.
    */
-  void decodeBlock();
+  void decodeBlock(size_t depth);
 
-  void decodeHeader();
+  /*!
+    @brief Parse the header
+    @param depth Current recursion depth, to detect files with excessive nesting.
+   */
+  void decodeHeader(size_t depth);
   /*!
     @brief Interpret File_Properties tag information, and save it in
         the respective XMP container.
@@ -166,6 +172,8 @@ class EXIV2API AsfVideo : public Image {
   uint64_t height_{};
   uint64_t width_{};
 
+  // Maximum recursion depth
+  const size_t max_recursion_depth_;
 };  // Class AsfVideo
 
 // *****************************************************************************
@@ -178,7 +186,7 @@ class EXIV2API AsfVideo : public Image {
       Caller owns the returned object and the auto-pointer ensures that
       it will be deleted.
  */
-EXIV2API Image::UniquePtr newAsfInstance(std::unique_ptr<BasicIo> io, bool create);
+EXIV2API Image::UniquePtr newAsfInstance(std::unique_ptr<BasicIo> io, const ImageCtorParams& params);
 
 //! Check if the file iIo is a Windows Asf Video.
 EXIV2API bool isAsfType(BasicIo& iIo, bool advance);

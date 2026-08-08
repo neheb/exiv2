@@ -11,6 +11,7 @@
 #include "canonmn_int.hpp"
 #include "casiomn_int.hpp"
 #include "fujimn_int.hpp"
+#include "image_int.hpp"
 #include "minoltamn_int.hpp"
 #include "nikonmn_int.hpp"
 #include "olympusmn_int.hpp"
@@ -240,9 +241,9 @@ constexpr TagDetails exifCompression[] = {
     {6, N_("JPEG (old-style)")},
     {7, N_("JPEG")},
     {8, N_("Adobe Deflate")},
-    {9, N_("JBIG B&W")},
+    {9, N_("JBIG B&W or VC-5")},
     {10, N_("JBIG Color")},
-    {32766, N_("Next 2-bits RLE")},
+    {32766, N_("NeXT 2-bits RLE or Sony ARW Compressed 2")},
     {32767, N_("Sony ARW Compressed")},
     {32769, N_("Epson ERF Compressed")},
     {32770, N_("Samsung SRW Compressed")},
@@ -327,8 +328,9 @@ constexpr TagDetails exifLightSource[] = {
     {11, N_("Shade")},
     {12, N_("Daylight fluorescent (D 5700 - 7100K)")},
     {13, N_("Day white fluorescent (N 4600 - 5400K)")},
-    {14, N_("Cool white fluorescent (W 3900 - 4500K)")},
-    {15, N_("White fluorescent (WW 3200 - 3700K)")},
+    {14, N_("Cool white fluorescent (W 3800 - 4500K)")},
+    {15, N_("White fluorescent (WW 3250 - 3800K)")},
+    {16, N_("Warm white fluorescent (L 2600 - 3250K)")},
     {17, N_("Standard light A")},
     {18, N_("Standard light B")},
     {19, N_("Standard light C")},
@@ -337,6 +339,16 @@ constexpr TagDetails exifLightSource[] = {
     {22, N_("D75")},
     {23, N_("D50")},
     {24, N_("ISO studio tungsten")},
+    {25, N_("Daylight light source (D 5700 - 7100K)")},
+    {26, N_("Day white light source (N 4600 - 5500K)")},
+    {27, N_("Cool white light source (W 3800 - 4500K)")},
+    {28, N_("White light source (WW 3250 - 3800K)")},
+    {29, N_("Warm white light source (L 2600 - 3250K)")},
+    {30, N_("Daylight LED (D 5700 - 7100K)")},
+    {31, N_("Day white LED (N 4600 - 5500K)")},
+    {32, N_("Cool white LED (W 3800 - 4500K)")},
+    {33, N_("White LED (WW 3250 - 3800K)")},
+    {34, N_("Warm white LED (L 2600 - 3250K)")},
     {255, N_("Other light source")},
 };
 
@@ -1767,6 +1779,20 @@ const TagInfo* ifdTagList() {
   return ifdTagInfo;
 }
 
+//! Distortion/ChromaticAbberation/ShadingCorrection, tags 0xa40f, 0xa410, 0xa411
+constexpr TagDetails exifLensCorrection[] = {
+    {0, N_("Not applied")},
+    {1, N_("Applied")},
+};
+
+//! NoiseReduction, tag 0xa412
+constexpr TagDetails exifNoiseReduction[] = {
+    {0, N_("Not applied")},
+    {1, N_("Low strength")},
+    {2, N_("Normal strength")},
+    {3, N_("High strength")},
+};
+
 //! CompositeImage, tag 0xa460
 constexpr TagDetails exifCompositeImage[] = {
     {0, N_("Unknown")},
@@ -1909,6 +1935,9 @@ constexpr TagInfo exifTagInfo[] = {
         "besides those in <ImageDescription>, and without the "
         "character code limitations of the <ImageDescription> tag."),
      IfdId::exifId, SectionId::userInfo, comment, 0, printValue},
+    {0x9287, "LearningOptOutIn", N_("Learning Usage Intention"),
+     N_("This tag indicates the copyright holder's intention on use of the file for machine (AI) learning."),
+     IfdId::exifId, SectionId::userInfo, undefined, 0, printValue},  // Exif 3.1
     {0x9290, "SubSecTime", N_("Sub-seconds Time"),
      N_("A tag used to record fractions of seconds for the <DateTime> tag."), IfdId::exifId, SectionId::dateTime,
      asciiString, 0, printValue},
@@ -2089,6 +2118,28 @@ constexpr TagInfo exifTagInfo[] = {
     {0xa40c, "SubjectDistanceRange", N_("Subject Distance Range"),
      N_("This tag indicates the distance to the subject."), IfdId::exifId, SectionId::captureCond, unsignedShort, 1,
      print0xa40c},
+    {0xa40d, "DevelopmentType", N_("Development Type"),
+     N_("This tag indicates the qualitative type of image processing (development) performed when generating the "
+        "recorded image."),
+     IfdId::exifId, SectionId::captureCond, unsignedShort, 1, printValue},  // Exif 3.1
+    {0xa40e, "DevelopmentTypeDescription", N_("Development Type Description"),
+     N_("This tag is used to record the concrete image processing (development) on the qualitative information shown "
+        "by DevelopmentType tag."),
+     IfdId::exifId, SectionId::captureCond, asciiString, 0, printValue},  // Exif 3.1
+    {0xa40f, "DistortionCorrection", N_("Distortion Correction"),
+     N_("This tag indicates whether or not distortion correction processing was applied by the camera at the capture."),
+     IfdId::exifId, SectionId::captureCond, unsignedShort, 1, EXV_PRINT_TAG(exifLensCorrection)},  // Exif 3.1
+    {0xa410, "ChromaticAberrationCorrection", N_("Chromatic Aberration Correction"),
+     N_("This tag indicates whether or not chromatic aberration correction processing was applied by the camera at the "
+        "capture."),
+     IfdId::exifId, SectionId::captureCond, unsignedShort, 1, EXV_PRINT_TAG(exifLensCorrection)},  // Exif 3.1
+    {0xa411, "ShadingCorrection", N_("Shading Correction"),
+     N_("This tag indicates whether or not shading correction processing was applied by the camera at the capture."),
+     IfdId::exifId, SectionId::captureCond, unsignedShort, 1, EXV_PRINT_TAG(exifLensCorrection)},  // Exif 3.1
+    {0xa412, "NoiseReduction", N_("Noise Reduction"),
+     N_("This tag indicates whether or not, and the tendency of noise reduction was applied by the camera at the "
+        "capture."),
+     IfdId::exifId, SectionId::captureCond, unsignedShort, 1, EXV_PRINT_TAG(exifNoiseReduction)},  // Exif 3.1
     {0xa420, "ImageUniqueID", N_("Image Unique ID"),
      N_("This tag indicates an identifier assigned uniquely to "
         "each image. It is recorded as an ASCII string equivalent "
@@ -2474,8 +2525,9 @@ const TagInfo* mnTagList() {
 }
 
 bool isMakerIfd(IfdId ifdId) {
-  auto ii = Exiv2::find(groupInfo, ifdId);
-  return ii && strcmp(ii->ifdName_, "Makernote") == 0;
+  if (auto ii = Exiv2::find(groupInfo, ifdId))
+    return std::string_view("Makernote") == ii->ifdName_;
+  return false;
 }
 
 bool isExifIfd(IfdId ifdId) {
@@ -2532,7 +2584,7 @@ const TagInfo* tagInfo(uint16_t tag, IfdId ifdId) {
   return nullptr;
 }  // tagInfo
 
-const TagInfo* tagInfo(const std::string& tagName, IfdId ifdId) {
+const TagInfo* tagInfo(std::string_view tagName, IfdId ifdId) {
   if (tagName.empty())
     return nullptr;
   if (auto ti = tagList(ifdId)) {
@@ -2620,7 +2672,7 @@ URational exposureTime(float shutterSpeedValue) {
 }
 
 uint16_t tagNumber(const std::string& tagName, IfdId ifdId) {
-  const TagInfo* ti = tagInfo(tagName, ifdId);
+  auto ti = tagInfo(tagName, ifdId);
   if (ti && ti->tag_ != 0xffff)
     return ti->tag_;
   if (!isHex(tagName, 4, "0x"))
@@ -2719,8 +2771,7 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
       (value.toRational(1).first != 0 && value.toRational(1).second == 0) ||
       (value.toRational(2).first != 0 && value.toRational(2).second == 0) ||
       (value.toRational(3).first != 0 && value.toRational(3).second == 0)) {
-    os << "(" << value << ")";
-    return os;
+    return os << "(" << value << ")";
   }
   // values numerically are ok, so they can be converted
   // here first and second can be zero, so initialise float with 0.0f
@@ -2740,19 +2791,16 @@ std::ostream& printLensSpecification(std::ostream& os, const Value& value, const
   // first value must not be bigger than second
   if ((std::isgreater(focalLength1, focalLength2) && std::isgreater(focalLength2, 0.0f)) ||
       (std::isgreater(fNumber1, fNumber2) && std::isgreater(fNumber2, 0.0f))) {
-    os << "(" << value << ")";
-    return os;
+    return os << "(" << value << ")";
   }
 
   // no lens specification available
-  if (focalLength1 == 0.0f && focalLength2 == 0.0f && fNumber1 == 0.0f && fNumber2 == 0.0f) {
-    os << "n/a";
-    return os;
-  }
+  if (focalLength1 == 0.0f && focalLength2 == 0.0f && fNumber1 == 0.0f && fNumber2 == 0.0f)
+    return os << _("n/a");
 
   // lens specification available - at least parts
   if (focalLength1 == 0.0f)
-    os << "n/a";
+    os << _("n/a");
   else
     os << std::setprecision(5) << focalLength1;
   if (focalLength1 != focalLength2) {
@@ -2910,6 +2958,7 @@ std::ostream& print0x829a(std::ostream& os, const Value& value, const ExifData*)
   if (value.typeId() != unsignedRational)
     return os << "(" << value << ")";
 
+  using Exiv2::operator<<;
   URational t = value.toRational();
   if (t.first == 0 || t.second == 0) {
     os << "(" << t << ")";
@@ -2926,18 +2975,10 @@ std::ostream& print0x829a(std::ostream& os, const Value& value, const ExifData*)
 }
 
 std::ostream& print0x829d(std::ostream& os, const Value& value, const ExifData*) {
-  std::ios::fmtflags f(os.flags());
   Rational fnumber = value.toRational();
-  if (fnumber.second != 0) {
-    std::ostringstream oss;
-    oss.copyfmt(os);
-    os << "F" << std::setprecision(2) << static_cast<float>(fnumber.first) / fnumber.second;
-    os.copyfmt(oss);
-  } else {
-    os << "(" << value << ")";
-  }
-  os.flags(f);
-  return os;
+  if (fnumber.second != 0)
+    return os << stringFormat("F{:.2g}", static_cast<float>(fnumber.first) / fnumber.second);
+  return os << "(" << value << ")";
 }
 
 //! ExposureProgram, tag 0x8822
@@ -3001,16 +3042,9 @@ std::ostream& print0x9201(std::ostream& os, const Value& value, const ExifData*)
 }
 
 std::ostream& print0x9202(std::ostream& os, const Value& value, const ExifData*) {
-  std::ios::fmtflags f(os.flags());
-  if (value.count() == 0 || value.toRational().second == 0) {
+  if (value.count() == 0 || value.toRational().second == 0)
     return os << "(" << value << ")";
-  }
-  std::ostringstream oss;
-  oss.copyfmt(os);
-  os << "F" << std::setprecision(2) << fnumber(value.toFloat());
-  os.copyfmt(oss);
-  os.flags(f);
-  return os;
+  return os << stringFormat("F{:.2g}", fnumber(value.toFloat()));
 }
 
 std::ostream& print0x9204(std::ostream& os, const Value& value, const ExifData*) {
@@ -3034,22 +3068,14 @@ std::ostream& print0x9204(std::ostream& os, const Value& value, const ExifData*)
 }
 
 std::ostream& print0x9206(std::ostream& os, const Value& value, const ExifData*) {
-  std::ios::fmtflags f(os.flags());
   Rational distance = value.toRational();
-  if (distance.first == 0) {
-    os << _("Unknown");
-  } else if (static_cast<uint32_t>(distance.first) == 0xffffffff) {
-    os << _("Infinity");
-  } else if (distance.second != 0) {
-    std::ostringstream oss;
-    oss.copyfmt(os);
-    os << std::fixed << std::setprecision(2) << static_cast<float>(distance.first) / distance.second << " m";
-    os.copyfmt(oss);
-  } else {
-    os << "(" << value << ")";
-  }
-  os.flags(f);
-  return os;
+  if (distance.first == 0)
+    return os << _("Unknown");
+  if (static_cast<uint32_t>(distance.first) == std::numeric_limits<uint32_t>::max())
+    return os << _("Infinity");
+  if (distance.second != 0)
+    return os << stringFormat("{:.2f} m", static_cast<float>(distance.first) / distance.second);
+  return os << "(" << value << ")";
 }
 
 //! MeteringMode, tag 0x9207
@@ -3068,18 +3094,10 @@ std::ostream& print0x9208(std::ostream& os, const Value& value, const ExifData* 
 }
 
 std::ostream& print0x920a(std::ostream& os, const Value& value, const ExifData*) {
-  std::ios::fmtflags f(os.flags());
   Rational length = value.toRational();
-  if (length.second != 0) {
-    std::ostringstream oss;
-    oss.copyfmt(os);
-    os << std::fixed << std::setprecision(1) << static_cast<float>(length.first) / length.second << " mm";
-    os.copyfmt(oss);
-  } else {
-    os << "(" << value << ")";
-  }
-  os.flags(f);
-  return os;
+  if (length.second != 0)
+    return os << stringFormat("{:.1f} mm", static_cast<float>(length.first) / length.second);
+  return os << "(" << value << ")";
 }
 
 //! ColorSpace, tag 0xa001
@@ -3160,26 +3178,16 @@ std::ostream& print0xa403(std::ostream& os, const Value& value, const ExifData* 
 }
 
 std::ostream& print0xa404(std::ostream& os, const Value& value, const ExifData*) {
-  std::ios::fmtflags f(os.flags());
   Rational zoom = value.toRational();
-  if (zoom.second == 0) {
-    os << _("Digital zoom not used");
-  } else {
-    std::ostringstream oss;
-    oss.copyfmt(os);
-    os << std::fixed << std::setprecision(1) << static_cast<float>(zoom.first) / zoom.second;
-    os.copyfmt(oss);
-  }
-  os.flags(f);
-  return os;
+  if (zoom.second == 0)
+    return os << _("Digital zoom not used");
+  return os << stringFormat("{:.1f}", static_cast<float>(zoom.first) / zoom.second);
 }
 
 std::ostream& print0xa405(std::ostream& os, const Value& value, const ExifData*) {
-  if (auto length = value.toInt64(); length == 0)
-    os << _("Unknown");
-  else
-    os << length << ".0 mm";
-  return os;
+  if (auto length = value.toInt64(); length != 0)
+    return os << length << ".0 mm";
+  return os << _("Unknown");
 }
 
 //! SceneCaptureType, tag 0xa406

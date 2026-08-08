@@ -15,9 +15,7 @@
 #include <iostream>
 #endif
 
-// Todo: Consolidate with existing code in struct Photoshop (jpgimage.hpp):
-//       Extend this helper to a proper class with all required functionality,
-//       then move it here or into a separate file?
+#include <array>
 
 //! @cond IGNORE
 struct PhotoshopResourceBlock {
@@ -97,7 +95,8 @@ enum kPhotoshopResourceID {
 // *****************************************************************************
 // class member definitions
 namespace Exiv2 {
-PsdImage::PsdImage(BasicIo::UniquePtr io) : Image(ImageType::psd, mdExif | mdIptc | mdXmp, std::move(io)) {
+PsdImage::PsdImage(BasicIo::UniquePtr io, const ImageCtorParams& params) :
+    Image(ImageType::psd, mdExif | mdIptc | mdXmp, std::move(io), params) {
 }  // PsdImage::PsdImage
 
 std::string PsdImage::mimeType() const {
@@ -283,6 +282,9 @@ void PsdImage::readResourceBlock(uint16_t resourceId, uint32_t resourceSize) {
       nativePreview.width_ = getLong(buf + 4, bigEndian);
       nativePreview.height_ = getLong(buf + 8, bigEndian);
       const uint32_t format = getLong(buf + 0, bigEndian);
+
+      Internal::enforce(nativePreview.size_ <= static_cast<size_t>(std::numeric_limits<long>::max()),
+                        Exiv2::ErrorCode::kerCorruptedMetadata);
 
       if (nativePreview.size_ > 0 && nativePreview.position_ > 0) {
         io_->seek(static_cast<long>(nativePreview.size_), BasicIo::cur);
@@ -536,140 +538,64 @@ void PsdImage::doWriteMetadata(BasicIo& outIo) {
 }  // PsdImage::doWriteMetadata
 
 uint32_t PsdImage::writeIptcData(const IptcData& iptcData, BasicIo& out) {
-  uint32_t resLength = 0;
-  byte buf[8];
-
-  if (!iptcData.empty()) {
-    DataBuf rawIptc = IptcParser::encode(iptcData);
-    if (!rawIptc.empty()) {
+  if (iptcData.empty())
+    return 0;
+  DataBuf rawIptc = IptcParser::encode(iptcData);
+  if (rawIptc.empty())
+    return 0;
 #ifdef EXIV2_DEBUG_MESSAGES
-      std::cerr << std::hex << "write: resourceId: " << kPhotoshopResourceID::IPTC_NAA << "\n";
-      std::cerr << std::dec << "Writing IPTC_NAA: size: " << rawIptc.size() << "\n";
+  std::cerr << std::hex << "write: resourceId: " << kPhotoshopResourceID::IPTC_NAA << "\n";
+  std::cerr << std::dec << "Writing IPTC_NAA: size: " << rawIptc.size() << "\n";
 #endif
-      if (out.write(reinterpret_cast<const byte*>(Photoshop::irbId_.front()), 4) != 4)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      us2Data(buf, kPhotoshopResourceID::IPTC_NAA, bigEndian);
-      if (out.write(buf, 2) != 2)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      us2Data(buf, 0, bigEndian);  // NULL resource name
-      if (out.write(buf, 2) != 2)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      ul2Data(buf, static_cast<uint32_t>(rawIptc.size()), bigEndian);
-      if (out.write(buf, 4) != 4)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      // Write encoded Iptc data
-      if (out.write(rawIptc.c_data(), rawIptc.size()) != rawIptc.size())
-        throw Error(ErrorCode::kerImageWriteFailed);
-      resLength += static_cast<uint32_t>(rawIptc.size()) + 12;
-      if (rawIptc.size() & 1)  // even padding
-      {
-        buf[0] = 0;
-        if (out.write(buf, 1) != 1)
-          throw Error(ErrorCode::kerImageWriteFailed);
-        resLength++;
-      }
-    }
-  }
-  return resLength;
+  return Photoshop::writeIrb(out, kPhotoshopResourceID::IPTC_NAA, rawIptc.c_data(), rawIptc.size());
 }  // PsdImage::writeIptcData
 
 uint32_t PsdImage::writeExifData(ExifData& exifData, BasicIo& out) {
-  uint32_t resLength = 0;
-  byte buf[8];
-
-  if (!exifData.empty()) {
-    Blob blob;
-    ByteOrder bo = byteOrder();
-    if (bo == invalidByteOrder) {
-      bo = littleEndian;
-      setByteOrder(bo);
-    }
-    ExifParser::encode(blob, bo, exifData);
-
-    if (!blob.empty()) {
-#ifdef EXIV2_DEBUG_MESSAGES
-      std::cerr << std::hex << "write: resourceId: " << kPhotoshopResourceID::ExifInfo << "\n";
-      std::cerr << std::dec << "Writing ExifInfo: size: " << blob.size() << "\n";
-#endif
-      if (out.write(reinterpret_cast<const byte*>(Photoshop::irbId_.front()), 4) != 4)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      us2Data(buf, kPhotoshopResourceID::ExifInfo, bigEndian);
-      if (out.write(buf, 2) != 2)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      us2Data(buf, 0, bigEndian);  // NULL resource name
-      if (out.write(buf, 2) != 2)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      ul2Data(buf, static_cast<uint32_t>(blob.size()), bigEndian);
-      if (out.write(buf, 4) != 4)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      // Write encoded Exif data
-      if (out.write(blob.data(), blob.size()) != blob.size())
-        throw Error(ErrorCode::kerImageWriteFailed);
-      resLength += static_cast<long>(blob.size()) + 12;
-      if (blob.size() & 1)  // even padding
-      {
-        buf[0] = 0;
-        if (out.write(buf, 1) != 1)
-          throw Error(ErrorCode::kerImageWriteFailed);
-        resLength++;
-      }
-    }
+  if (exifData.empty())
+    return 0;
+  Blob blob;
+  ByteOrder bo = byteOrder();
+  if (bo == invalidByteOrder) {
+    bo = littleEndian;
+    setByteOrder(bo);
   }
-  return resLength;
+  ExifParser::encode(blob, bo, exifData);
+  if (blob.empty())
+    return 0;
+#ifdef EXIV2_DEBUG_MESSAGES
+  std::cerr << std::hex << "write: resourceId: " << kPhotoshopResourceID::ExifInfo << "\n";
+  std::cerr << std::dec << "Writing ExifInfo: size: " << blob.size() << "\n";
+#endif
+  return Photoshop::writeIrb(out, kPhotoshopResourceID::ExifInfo, reinterpret_cast<const byte*>(blob.data()),
+                             blob.size());
 }  // PsdImage::writeExifData
 
 uint32_t PsdImage::writeXmpData(const XmpData& xmpData, BasicIo& out) const {
   std::string xmpPacket;
-  uint32_t resLength = 0;
-  byte buf[8];
 
 #ifdef EXIV2_DEBUG_MESSAGES
   std::cerr << "writeXmpFromPacket(): " << writeXmpFromPacket() << "\n";
 #endif
-  //        writeXmpFromPacket(true);
   if (!writeXmpFromPacket() && XmpParser::encode(xmpPacket, xmpData) > 1) {
 #ifndef SUPPRESS_WARNINGS
     EXV_ERROR << "Failed to encode XMP metadata.\n";
 #endif
   }
 
-  if (!xmpPacket.empty()) {
+  if (xmpPacket.empty())
+    return 0;
 #ifdef EXIV2_DEBUG_MESSAGES
-    std::cerr << std::hex << "write: resourceId: " << kPhotoshopResourceID::XMPPacket << "\n";
-    std::cerr << std::dec << "Writing XMPPacket: size: " << xmpPacket.size() << "\n";
+  std::cerr << std::hex << "write: resourceId: " << kPhotoshopResourceID::XMPPacket << "\n";
+  std::cerr << std::dec << "Writing XMPPacket: size: " << xmpPacket.size() << "\n";
 #endif
-    if (out.write(reinterpret_cast<const byte*>(Photoshop::irbId_.front()), 4) != 4)
-      throw Error(ErrorCode::kerImageWriteFailed);
-    us2Data(buf, kPhotoshopResourceID::XMPPacket, bigEndian);
-    if (out.write(buf, 2) != 2)
-      throw Error(ErrorCode::kerImageWriteFailed);
-    us2Data(buf, 0, bigEndian);  // NULL resource name
-    if (out.write(buf, 2) != 2)
-      throw Error(ErrorCode::kerImageWriteFailed);
-    ul2Data(buf, static_cast<uint32_t>(xmpPacket.size()), bigEndian);
-    if (out.write(buf, 4) != 4)
-      throw Error(ErrorCode::kerImageWriteFailed);
-    // Write XMPPacket
-    if (out.write(reinterpret_cast<const byte*>(xmpPacket.data()), xmpPacket.size()) != xmpPacket.size())
-      throw Error(ErrorCode::kerImageWriteFailed);
-    if (out.error())
-      throw Error(ErrorCode::kerImageWriteFailed);
-    resLength += static_cast<uint32_t>(xmpPacket.size()) + 12;
-    if (xmpPacket.size() & 1)  // even padding
-    {
-      buf[0] = 0;
-      if (out.write(buf, 1) != 1)
-        throw Error(ErrorCode::kerImageWriteFailed);
-      resLength++;
-    }
-  }
-  return resLength;
+  return Photoshop::writeIrb(out, kPhotoshopResourceID::XMPPacket, reinterpret_cast<const byte*>(xmpPacket.data()),
+                             xmpPacket.size());
 }  // PsdImage::writeXmpData
 
 // *************************************************************************
 // free functions
-Image::UniquePtr newPsdInstance(BasicIo::UniquePtr io, bool /*create*/) {
-  auto image = std::make_unique<PsdImage>(std::move(io));
+Image::UniquePtr newPsdInstance(BasicIo::UniquePtr io, const ImageCtorParams& params) {
+  auto image = std::make_unique<PsdImage>(std::move(io), params);
   if (!image->good()) {
     return nullptr;
   }

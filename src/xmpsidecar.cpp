@@ -26,8 +26,9 @@ constexpr auto xmlFooter = "<?xpacket end=\"w\"?>";
 
 // class member definitions
 namespace Exiv2 {
-XmpSidecar::XmpSidecar(BasicIo::UniquePtr io, bool create) : Image(ImageType::xmp, mdXmp, std::move(io)) {
-  if (create && io_->open() == 0) {
+XmpSidecar::XmpSidecar(BasicIo::UniquePtr io, const ImageCtorParams& params) :
+    Image(ImageType::xmp, mdXmp, std::move(io), params) {
+  if (params.create() && io_->open() == 0) {
     IoCloser closer(*io_);
     io_->write(reinterpret_cast<const byte*>(xmlHeader), xmlHdrCnt);
   }
@@ -59,9 +60,9 @@ void XmpSidecar::readMetadata() {
   // Read the XMP packet from the IO stream
   std::string xmpPacket;
   const long len = 64 * 1024;
-  byte buf[len];
-  while (auto l = io_->read(buf, len)) {
-    xmpPacket.append(reinterpret_cast<char*>(buf), l);
+  auto buf = std::make_unique<byte[]>(len);
+  while (auto l = io_->read(buf.get(), len)) {
+    xmpPacket.append(reinterpret_cast<char*>(buf.get()), l);
   }
   if (io_->error())
     throw Error(ErrorCode::kerFailedToReadImageData);
@@ -149,8 +150,8 @@ void XmpSidecar::writeMetadata() {
 
 // *************************************************************************
 // free functions
-Image::UniquePtr newXmpInstance(BasicIo::UniquePtr io, bool create) {
-  auto image = std::make_unique<XmpSidecar>(std::move(io), create);
+Image::UniquePtr newXmpInstance(BasicIo::UniquePtr io, const ImageCtorParams& params) {
+  auto image = std::make_unique<XmpSidecar>(std::move(io), params);
   if (!image->good()) {
     return nullptr;
   }

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import system_tests
-import unittest
+import pytest
 
 # test needs system_tests.BT.vv['enable_bmff']=1
 bSkip = system_tests.BT.verbose_version().get("enable_bmff") != "1"
 if bSkip:
-    raise unittest.SkipTest("*** requires enable_bmff=1 ***")
+    pytest.skip("*** requires enable_bmff=1 ***", allow_module_level=True)
 
 
 class pr_1475_Sony_hif(metaclass=system_tests.CaseMeta):

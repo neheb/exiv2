@@ -282,6 +282,7 @@ constexpr TagDetails canonModelId[] = {
     {0x04170000, "PowerShot SX730 HS"},
     {0x04180000, "PowerShot G1 X Mark III"},
     {0x06040000, "PowerShot S100 / Digital IXUS / IXY Digital"},
+    {0x40000227, "EOS C50"},
     {0x4007d673, "DC19/DC21/DC22"},
     {0x4007d674, "XH A1"},
     {0x4007d675, "HV10"},
@@ -395,6 +396,7 @@ constexpr TagDetails canonModelId[] = {
     {0x80000497, "PowerShot V1"},
     {0x80000498, "EOS R100"},
     {0x80000516, "EOS R50 V"},
+    {0x80000518, "EOS R6 Mark III"},
     {0x80000520, "EOS D2000C"},
     {0x80000560, "EOS D6000C"},
 };
@@ -1729,8 +1731,9 @@ constexpr TagDetails canonCsLensType[] = {
     {170, "Sigma 800mm f/5.6 APO EX DG HSM"},  // 2
     {171, "Canon EF 300mm f/4L USM"},
     {172, "Canon EF 400mm f/5.6L USM"},
-    {172, "Sigma 150-600mm f/5-6.3 DG OS HSM | S"},  // 1
-    {172, "Sigma 500mm f/4.5 APO EX DG HSM"},        // 2
+    {172, "Sigma 150-600mm f/5-6.3 DG OS HSM | S"},         // 1
+    {172, "Sigma 500mm f/4.5 APO EX DG HSM"},               // 2
+    {172, "Sigma 150-500mm f/5-6.3 APO DG OS HSM + 1.4x"},  // 3
     {173, "Canon EF 180mm Macro f/3.5L USM"},
     {173, "Sigma 180mm EX HSM Macro f/3.5"},              // 1
     {173, "Sigma APO Macro 150mm f/2.8 EX DG HSM"},       // 2
@@ -1812,6 +1815,7 @@ constexpr TagDetails canonCsLensType[] = {
     {213, "Tamron 16-300mm f/3.5-6.3 Di II VC PZD Macro"},  // 2
     {213, "Tamron SP 35mm f/1.8 Di VC USD"},                // 3
     {213, "Tamron SP 45mm f/1.8 Di VC USD"},                // 4
+    {213, "Tamron SP 70-300mm f/4-5.6 Di VC USD"},          // 5
     {214, "Canon EF-S 18-55mm f/3.5-5.6 USM"},
     {215, "Canon EF 55-200mm f/4.5-5.6 II USM"},
     {217, "Tamron AF 18-270mm f/3.5-6.3 Di II VC PZD"},
@@ -1906,7 +1910,9 @@ constexpr TagDetails canonCsLensType[] = {
     {508, "Tamron 10-24mm f/3.5-4.5 Di II VC HLD"},  // 1
     {624, "Sigma 50-100mm f/1.8 DC HSM Art"},
     {624, "Sigma 70-200mm f/2.8 DG OS HSM | S"},
-    {624, "Sigma 150-600mm f/5-6.3 DG OS HSM | C"},
+    {624, "Sigma 14mm f/1.8 DG HSM | A"},                   // 1
+    {624, "Sigma 150-600mm f/5-6.3 DG OS HSM | C"},         // 2
+    {624, "Sigma 150-600mm f/5-6.3 DG OS HSM | C + 1.4x"},  // 3
     {747, "Canon EF 100-400mm f/4.5-5.6L IS II USM"},
     {747, "Tamron SP 150-600mm f/5-6.3 Di VC USD G2"},  // 1
     {748, "Canon EF 100-400mm f/4.5-5.6L IS II USM + 1.4x"},
@@ -2025,6 +2031,11 @@ constexpr TagDetails canonCsLensType[] = {
     {61182, "Canon RF 50mm F1.4 L VCM"},
     {61182, "Canon RF 24mm F1.4 L VCM"},
     {61182, "Canon RF 20mm F1.4 L VCM"},
+    {61182, "Canon RF 85mm F1.4 L VCM"},
+    {61182, "Canon RF 20-50mm F4 L IS USM PZ"},
+    {61182, "Canon RF 45mm F1.2 STM"},
+    {61182, "Canon RF 7-14mm F2.8-3.5 L Fisheye STM"},
+    {61182, "Canon RF 14mm F1.4 L VCM"},
     {65535, N_("n/a")},
 };
 
@@ -2422,8 +2433,15 @@ constexpr TagDetails canonToningEffect[] = {
     {0, N_("None")}, {1, N_("Sepia")}, {2, N_("Blue")}, {3, N_("Purple")}, {4, N_("Green")},
 };
 
+//! ShutterMode, tag 0x0017
+constexpr TagDetails canonShutterMode[] = {
+    {0, N_("Mechanical")},
+    {1, N_("Electronic First Curtain")},
+    {2, N_("Electronic")},
+};
+
 //! RFLensType, tag 0x003D
-// from https://github.com/exiftool/exiftool/blob/13.16/lib/Image/ExifTool/Canon.pm#L6961
+// from https://github.com/exiftool/exiftool/blob/13.59/lib/Image/ExifTool/Canon.pm#L7060
 constexpr TagDetails canonRFLensType[] = {
     {0, N_("n/a")},
     {257, "Canon RF 50mm F1.2 L USM"},
@@ -2496,6 +2514,11 @@ constexpr TagDetails canonRFLensType[] = {
     {325, "Canon RF 50mm F1.4 L VCM"},
     {326, "Canon RF 24mm F1.4 L VCM"},
     {327, "Canon RF 20mm F1.4 L VCM"},
+    {328, "Canon RF 85mm F1.4 L VCM"},
+    {329, "Canon RF 20-50mm F4 L IS USM PZ"},
+    {330, "Canon RF 45mm F1.2 STM"},
+    {331, "Canon RF 7-14mm F2.8-3.5 L Fisheye STM"},
+    {332, "Canon RF 14mm F1.4 L VCM"},
 };
 
 // Canon File Info Tag
@@ -2532,8 +2555,12 @@ constexpr TagInfo CanonMakerNote::tagInfoFi_[] = {
      SectionId::makerTags, unsignedShort, 1, printFiFocusDistance},
     {0x0015, "FocusDistanceLower", N_("Focus Distance Lower"), N_("Focus Distance Lower"), IfdId::canonFiId,
      SectionId::makerTags, unsignedShort, 1, printFiFocusDistance},
+    {0x0017, "ShutterMode", N_("Shutter Mode"), N_("Shutter mode"), IfdId::canonFiId, SectionId::makerTags, signedShort,
+     1, EXV_PRINT_TAG(canonShutterMode)},
     {0x0019, "FlashExposureLock", N_("Flash Exposure Lock"), N_("Flash exposure lock"), IfdId::canonFiId,
      SectionId::makerTags, signedShort, 1, EXV_PRINT_TAG(canonOffOn)},
+    {0x0020, "AntiFlicker", N_("Anti-Flicker"), N_("Anti-flicker"), IfdId::canonFiId, SectionId::makerTags, signedShort,
+     1, EXV_PRINT_TAG(canonOffOn)},
     {0x003D, "RFLensType", N_("RF Lens Type"), N_("RF Lens Type"), IfdId::canonFiId, SectionId::makerTags,
      unsignedShort, 1, EXV_PRINT_TAG(canonRFLensType)},
     // End of list marker
@@ -2689,8 +2716,12 @@ std::ostream& CanonMakerNote::print0x0008(std::ostream& os, const Value& value, 
 }
 
 std::ostream& CanonMakerNote::print0x000a(std::ostream& os, const Value& value, const ExifData*) {
-  uint32_t l = std::stoul(value.toString());
-  return os << stringFormat("{:04x}{:05}", (l >> 16) & 0xFFFF, l & 0xFFFF);
+  try {
+    uint32_t l = std::stoul(value.toString());
+    return os << stringFormat("{:04x}{:05}", (l >> 16) & 0xFFFF, l & 0xFFFF);
+  } catch (const std::logic_error&) {
+    return os << value;
+  }
 }
 
 std::ostream& CanonMakerNote::print0x000c(std::ostream& os, const Value& value, const ExifData* exifData) {
@@ -2702,8 +2733,12 @@ std::ostream& CanonMakerNote::print0x000c(std::ostream& os, const Value& value, 
   auto pos = exifData->findKey(key);
   // if model is EOS D30
   if (pos != exifData->end() && pos->value().count() == 1 && pos->value().toInt64() == 0x01140000) {
-    uint32_t l = std::stoul(value.toString());
-    return os << stringFormat("{:04x}{:05}", (l >> 16) & 0xFFFF, l & 0xFFFF);
+    try {
+      uint32_t l = std::stoul(value.toString());
+      return os << stringFormat("{:04x}{:05}", (l >> 16) & 0xFFFF, l & 0xFFFF);
+    } catch (const std::logic_error&) {
+      return os << value;
+    }
   }
   return os << value;
 }

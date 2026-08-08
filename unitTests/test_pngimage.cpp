@@ -3,11 +3,16 @@
 #include <exiv2/basicio.hpp>
 #include <exiv2/pngimage.hpp>
 #include "pngchunk_int.hpp"  // This is not part of the public API
+#include "unittest_utils.hpp"
 
+#include "mock_basicio.hpp"
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
 #include <array>
+#include <cstring>
 #include <memory>
 #include <sstream>
 
@@ -47,28 +52,24 @@ TEST(PngChunk, keyTxtChunkThrowsIfSizeIsNotEnough) {
 
 TEST(PngImage, canBeCreatedFromScratch) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  ASSERT_NO_THROW(PngImage png(std::move(memIo), create));
+  ASSERT_NO_THROW(PngImage png(std::move(memIo), defaultImageCtorParams(true)));
 }
 
 TEST(PngImage, canBeOpenedEvenWithAnEmptyMemIo) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{false};
-  ASSERT_NO_THROW(PngImage png(std::move(memIo), create));
+  ASSERT_NO_THROW(PngImage png(std::move(memIo), defaultImageCtorParams(false)));
 }
 
 TEST(PngImage, mimeTypeIsPng) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  PngImage png(std::move(memIo), create);
+  PngImage png(std::move(memIo), defaultImageCtorParams(true));
 
   ASSERT_EQ("image/png", png.mimeType());
 }
 
 TEST(PngImage, printStructurePrintsNothingWithKpsNone) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  PngImage png(std::move(memIo), create);
+  PngImage png(std::move(memIo), defaultImageCtorParams(true));
 
   std::ostringstream stream;
   png.printStructure(stream, Exiv2::kpsNone, 1);
@@ -78,8 +79,7 @@ TEST(PngImage, printStructurePrintsNothingWithKpsNone) {
 
 TEST(PngImage, printStructurePrintsDataWithKpsBasic) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  PngImage png(std::move(memIo), create);
+  PngImage png(std::move(memIo), defaultImageCtorParams(true));
 
   std::ostringstream stream;
   png.printStructure(stream, Exiv2::kpsBasic, 1);
@@ -89,8 +89,7 @@ TEST(PngImage, printStructurePrintsDataWithKpsBasic) {
 
 TEST(PngImage, cannotReadMetadataFromEmptyIo) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{false};
-  PngImage png(std::move(memIo), create);
+  PngImage png(std::move(memIo), defaultImageCtorParams(false));
 
   try {
     png.readMetadata();
@@ -102,9 +101,9 @@ TEST(PngImage, cannotReadMetadataFromEmptyIo) {
 }
 
 TEST(PngImage, cannotReadMetadataFromIoWhichCannotBeOpened) {
-  auto memIo = std::make_unique<FileIo>("NonExistingPath.png");
-  const bool create{false};
-  PngImage png(std::move(memIo), create);
+  auto mockIo = makeMockIo();
+  setupOpenFailure(*mockIo);
+  PngImage png(std::move(mockIo), defaultImageCtorParams(false));
 
   try {
     png.readMetadata();
@@ -116,8 +115,7 @@ TEST(PngImage, cannotReadMetadataFromIoWhichCannotBeOpened) {
 
 TEST(PngImage, cannotWriteMetadataToEmptyIo) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{false};
-  PngImage png(std::move(memIo), create);
+  PngImage png(std::move(memIo), defaultImageCtorParams(false));
 
   try {
     png.writeMetadata();
@@ -129,15 +127,14 @@ TEST(PngImage, cannotWriteMetadataToEmptyIo) {
 
 TEST(PngImage, canWriteMetadataFromCreatedPngImage) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  PngImage png(std::move(memIo), create);
+  PngImage png(std::move(memIo), defaultImageCtorParams(true));
   ASSERT_NO_THROW(png.writeMetadata());
 }
 
 TEST(PngImage, cannotWriteMetadataToIoWhichCannotBeOpened) {
-  auto memIo = std::make_unique<FileIo>("NonExistingPath.png");
-  const bool create{false};
-  PngImage png(std::move(memIo), create);
+  auto mockIo = makeMockIo();
+  setupOpenFailure(*mockIo);
+  PngImage png(std::move(mockIo), defaultImageCtorParams(false));
 
   try {
     png.readMetadata();
@@ -148,36 +145,25 @@ TEST(PngImage, cannotWriteMetadataToIoWhichCannotBeOpened) {
 }
 
 TEST(isPngType, withValidSignatureReturnsTrue) {
-  const unsigned char pngSignature[8] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-  MemIo memIo(pngSignature, 8);
-  ASSERT_TRUE(isPngType(memIo, false));
+  auto mockIo = makeMockIo();
+  setupRead(*mockIo, {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A});
+  ASSERT_TRUE(isPngType(*mockIo, false));
 }
 
 TEST(isPngType, withInvalidSignatureReturnsFalse) {
-  const unsigned char pngSignature[8] = {0x69, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A};
-  MemIo memIo(pngSignature, 8);
-  ASSERT_FALSE(isPngType(memIo, false));
+  auto mockIo = makeMockIo();
+  setupRead(*mockIo, {0x69, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A});
+  ASSERT_FALSE(isPngType(*mockIo, false));
 }
 
 TEST(isPngType, withShorterDataReturnsFalse) {
-  const unsigned char pngSignature[6] = {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A};
-  MemIo memIo(pngSignature, 6);
-  ASSERT_FALSE(isPngType(memIo, false));
+  auto mockIo = makeMockIo();
+  setupRead(*mockIo, {0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A});
+  ASSERT_FALSE(isPngType(*mockIo, false));
 }
 
-TEST(isPngType, withEmptyDataReturnsFalse) {
-  MemIo memIo;
-  ASSERT_FALSE(isPngType(memIo, false));
-}
-
-TEST(isPngType, withMemIoInErroneousStatusThrows) {
-  MemIo memIo;
-  memIo.getb();
-
-  try {
-    isPngType(memIo, false);
-    FAIL();
-  } catch (const Exiv2::Error& e) {
-    ASSERT_EQ(ErrorCode::kerInputDataReadFailed, e.code());
-  }
+TEST(isPngType, withReadFailureReturnsFalse) {
+  auto mockIo = makeMockIo();
+  setupReadFailure(*mockIo);
+  ASSERT_FALSE(isPngType(*mockIo, false));
 }

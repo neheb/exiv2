@@ -61,10 +61,19 @@ ExifData::const_iterator findMetadatumSkip0inNikonLd4(const ExifData& ed, const 
 namespace Exiv2 {
 ExifData::const_iterator orientation(const ExifData& ed) {
   static constexpr const char* keys[] = {
-      "Exif.Image.Orientation",       "Exif.Panasonic.Rotation",    "Exif.PanasonicRaw.Orientation",
-      "Exif.MinoltaCs5D.Rotation",    "Exif.MinoltaCs5D.Rotation2", "Exif.MinoltaCs7D.Rotation",
-      "Exif.Sony1MltCsA100.Rotation", "Exif.Sony1Cs.Rotation",      "Exif.Sony2Cs.Rotation",
-      "Exif.Sony1Cs2.Rotation",       "Exif.Sony2Cs2.Rotation",     "Exif.Sony1MltCsA100.Rotation",
+      "Exif.Image.Orientation",
+      "Exif.Panasonic.Rotation",
+      "Exif.PanasonicRaw.Orientation",
+      "Exif.MinoltaCs5D.Rotation",
+      "Exif.MinoltaCs5D.Rotation2",
+      "Exif.MinoltaCs7D.Rotation",
+      "Exif.Sony1MltCsA100.Rotation",
+      "Exif.Sony1Cs.Rotation",
+      "Exif.Sony2Cs.Rotation",
+      "Exif.Sony1Cs2.Rotation",
+      "Exif.Sony2Cs2.Rotation",
+      "Exif.Sony1MltCsA100.Rotation",
+      "Exif.SonyMisc3c.CameraOrientation",
   };
   return findMetadatum(ed, keys, std::size(keys));
 }
@@ -126,21 +135,24 @@ ExifData::const_iterator isoSpeed(const ExifData& ed) {
   const size_t cnt = std::size(keys);
   auto md = ed.end();
   int64_t iso_val = -1;
-  for (size_t idx = 0; idx < cnt;) {
-    md = findMetadatum(ed, keys + idx, cnt - idx);
-    if (md == ed.end())
-      break;
+
+  for (size_t idx = 0; idx < cnt; ++idx) {
+    auto it = findMetadatum(ed, &keys[idx], 1);
+    if (it == ed.end())
+      continue;
+
     std::ostringstream os;
-    md->write(os, &ed);
-    bool ok = false;
+    it->write(os, &ed);
+
     if (Internal::contains(os.str(), "inf"))
-      break;
+      continue;
+
+    bool ok = false;
     iso_val = parseInt64(os.str(), ok);
-    if (ok && iso_val > 0)
+    if (ok && iso_val > 0) {
+      md = it;
       break;
-    while (md->key() != keys[idx++] && idx < cnt) {
     }
-    md = ed.end();
   }
 
   // there is either a possible ISO "overflow" or no legacy
@@ -163,24 +175,20 @@ ExifData::const_iterator isoSpeed(const ExifData& ed) {
     // pick up list of ISO tags, and check for at least one of
     // them available.
     const SensKeyNameList* sensKeys = &sensitivityKey[st_val - 1];
-    md_st = ed.end();
-    for (int idx = 0; idx < sensKeys->count; md_st = ed.end()) {
-      md_st = findMetadatum(ed, sensKeys->keys, sensKeys->count);
+    for (int idx = 0; idx < sensKeys->count; ++idx) {
+      md_st = findMetadatum(ed, &sensKeys->keys[idx], 1);
       if (md_st == ed.end())
-        break;
+        continue;
       std::ostringstream os_iso;
       md_st->write(os_iso, &ed);
       ok = false;
       iso_tmp_val = parseInt64(os_iso.str(), ok);
       // something wrong with the value
-      if (ok || iso_tmp_val > 0) {
+      if (ok && iso_tmp_val > 0) {
         md = md_st;
         break;
       }
-      while (md_st->key() != sensKeys->keys[idx++] && idx < sensKeys->count) {
-      }
     }
-    break;
   }
 
   return md;

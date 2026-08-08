@@ -18,7 +18,7 @@
 // *****************************************************************************
 // included header files
 #include <iosfwd>
-#include <string>
+#include <string_view>
 
 // *****************************************************************************
 // namespace extensions
@@ -238,7 +238,7 @@ class Nikon3MakerNote {
   static std::ostream& printAfPointsInFocus(std::ostream& os, const Value& value, const ExifData* metadata);
   //! Print lens name
   static std::ostream& printLensId(std::ostream& os, const Value& value, const ExifData* metadata,
-                                   const std::string& group);
+                                   std::string_view group);
   static std::ostream& printLensId1(std::ostream& os, const Value& value, const ExifData* metadata);
   static std::ostream& printLensId2(std::ostream& os, const Value& value, const ExifData* metadata);
   static std::ostream& printLensId3(std::ostream& os, const Value& value, const ExifData* metadata);

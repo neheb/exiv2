@@ -2,35 +2,45 @@
 
 #include <exiv2/basicio.hpp>
 #include <exiv2/jp2image.hpp>
+#include "unittest_utils.hpp"
 
+#include "mock_basicio.hpp"
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include <array>
 
 using namespace Exiv2;
 
+namespace {
+
+constexpr std::array<byte, 12> kJp2Signature = {
+    0x00, 0x00, 0x00, 0x0c, 0x6a, 0x50, 0x20, 0x20, 0x0d, 0x0a, 0x87, 0x0a,
+};
+
+}  // namespace
+
 TEST(Jp2Image, canBeCreatedFromScratch) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  ASSERT_NO_THROW(Jp2Image image(std::move(memIo), create));
+  ASSERT_NO_THROW(Jp2Image image(std::move(memIo), defaultImageCtorParams(true)));
 }
 
 TEST(Jp2Image, canBeOpenedEvenWithAnEmptyMemIo) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{false};
-  ASSERT_NO_THROW(Jp2Image image(std::move(memIo), create));
+  ASSERT_NO_THROW(Jp2Image image(std::move(memIo), defaultImageCtorParams(false)));
 }
 
 TEST(Jp2Image, mimeTypeIsPng) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  Jp2Image image(std::move(memIo), create);
+  Jp2Image image(std::move(memIo), defaultImageCtorParams(true));
 
   ASSERT_EQ("image/jp2", image.mimeType());
 }
 
 TEST(Jp2Image, printStructurePrintsNothingWithKpsNone) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  Jp2Image image(std::move(memIo), create);
+  Jp2Image image(std::move(memIo), defaultImageCtorParams(true));
 
   std::ostringstream stream;
   image.printStructure(stream, Exiv2::kpsNone, 1);
@@ -40,8 +50,7 @@ TEST(Jp2Image, printStructurePrintsNothingWithKpsNone) {
 
 TEST(Jp2Image, printStructurePrintsDataWithKpsBasic) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  Jp2Image image(std::move(memIo), create);
+  Jp2Image image(std::move(memIo), defaultImageCtorParams(true));
 
   std::ostringstream stream;
   image.printStructure(stream, Exiv2::kpsBasic, 1);
@@ -51,8 +60,7 @@ TEST(Jp2Image, printStructurePrintsDataWithKpsBasic) {
 
 TEST(Jp2Image, cannotReadMetadataFromEmptyIo) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{false};
-  Jp2Image image(std::move(memIo), create);
+  Jp2Image image(std::move(memIo), defaultImageCtorParams(false));
 
   try {
     image.readMetadata();
@@ -64,9 +72,9 @@ TEST(Jp2Image, cannotReadMetadataFromEmptyIo) {
 }
 
 TEST(Jp2Image, cannotReadMetadataFromIoWhichCannotBeOpened) {
-  auto memIo = std::make_unique<FileIo>("NonExistingPath.jp2");
-  const bool create{false};
-  Jp2Image image(std::move(memIo), create);
+  auto mockIo = makeMockIo();
+  setupOpenFailure(*mockIo);
+  Jp2Image image(std::move(mockIo), defaultImageCtorParams(false));
 
   try {
     image.readMetadata();
@@ -78,8 +86,7 @@ TEST(Jp2Image, cannotReadMetadataFromIoWhichCannotBeOpened) {
 
 TEST(Jp2Image, cannotWriteMetadataToEmptyIo) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{false};
-  Jp2Image image(std::move(memIo), create);
+  Jp2Image image(std::move(memIo), defaultImageCtorParams(false));
 
   try {
     image.writeMetadata();
@@ -89,17 +96,28 @@ TEST(Jp2Image, cannotWriteMetadataToEmptyIo) {
   }
 }
 
+TEST(isJp2Type, withValidSignatureReturnsTrue) {
+  auto mockIo = makeMockIo();
+  setupRead(*mockIo, kJp2Signature);
+  ASSERT_TRUE(isJp2Type(*mockIo, false));
+}
+
+TEST(isJp2Type, withReadFailureReturnsFalse) {
+  auto mockIo = makeMockIo();
+  setupReadFailure(*mockIo);
+  ASSERT_FALSE(isJp2Type(*mockIo, false));
+}
+
 TEST(Jp2Image, canWriteMetadataFromCreatedJp2Image) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  Jp2Image image(std::move(memIo), create);
+  Jp2Image image(std::move(memIo), defaultImageCtorParams(true));
   ASSERT_NO_THROW(image.writeMetadata());
 }
 
 TEST(Jp2Image, cannotWriteMetadataToIoWhichCannotBeOpened) {
-  auto memIo = std::make_unique<FileIo>("NonExistingPath.jp2");
-  const bool create{false};
-  Jp2Image image(std::move(memIo), create);
+  auto mockIo = makeMockIo();
+  setupOpenFailure(*mockIo);
+  Jp2Image image(std::move(mockIo), defaultImageCtorParams(false));
 
   try {
     image.readMetadata();
@@ -111,8 +129,7 @@ TEST(Jp2Image, cannotWriteMetadataToIoWhichCannotBeOpened) {
 
 TEST(Jp2Image, canWriteMetadataAndReadAfterwards) {
   auto memIo = std::make_unique<MemIo>();
-  const bool create{true};
-  Jp2Image image(std::move(memIo), create);
+  Jp2Image image(std::move(memIo), defaultImageCtorParams(true));
   ASSERT_NO_THROW(image.writeMetadata());
   ASSERT_NO_THROW(image.readMetadata());
 }

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from system_tests import CaseMeta, path
-import unittest
+import pytest
 
 
-@unittest.skip("Skipping test using option -pR (only for Debug mode)")
+@pytest.mark.skip("Skipping test using option -pR (only for Debug mode)")
 class test_issue_547(metaclass=CaseMeta):
     """
     Regression test for the bug described in:

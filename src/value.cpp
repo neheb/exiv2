@@ -389,15 +389,15 @@ CommentValue::CharsetId CommentValue::charsetId() const {
 
 const char* CommentValue::detectCharset(std::string& c) const {
   // Interpret a BOM if there is one
-  if (c.front() == '\xef' && c[1] == '\xbb' && c[2] == '\xbf') {
+  if (c.compare(0, 3, "\xef\xbb\xbf") == 0) {
     c = c.substr(3);
     return "UTF-8";
   }
-  if (c.front() == '\xff' && c[1] == '\xfe') {
+  if (c.compare(0, 2, "\xff\xfe") == 0) {
     c = c.substr(2);
     return "UCS-2LE";
   }
-  if (c.front() == '\xfe' && c[1] == '\xff') {
+  if (c.compare(0, 2, "\xfe\xff") == 0) {
     c = c.substr(2);
     return "UCS-2BE";
   }
@@ -446,9 +446,7 @@ XmpValue::XmpStruct XmpValue::xmpStruct() const {
 }
 
 size_t XmpValue::copy(byte* buf, ByteOrder /*byteOrder*/) const {
-  std::ostringstream os;
-  write(os);
-  std::string s = os.str();
+  auto s = toString();
   if (!s.empty())
     std::copy(s.begin(), s.end(), buf);
   return s.size();
@@ -460,9 +458,8 @@ int XmpValue::read(const byte* buf, size_t len, ByteOrder /*byteOrder*/) {
 }
 
 size_t XmpValue::size() const {
-  std::ostringstream os;
-  write(os);
-  return os.str().size();
+  auto s = toString();
+  return s.size();
 }
 
 XmpTextValue::XmpTextValue() : XmpValue(xmpText) {
@@ -510,7 +507,9 @@ XmpTextValue::UniquePtr XmpTextValue::clone() const {
 }
 
 size_t XmpTextValue::size() const {
-  return value_.size();
+  std::ostringstream os;
+  write(os);
+  return os.str().size();
 }
 
 size_t XmpTextValue::count() const {
@@ -914,57 +913,67 @@ int TimeValue::read(const std::string& buf) {
     spos = 4;
   }
 
-  auto hi = std::stoi(buf.substr(0, 2));
-  if (hi < 0 || hi > 23)
-    return printWarning();
-  time_.hour = hi;
-  if (buf.size() > 3) {
-    auto mi = std::stoi(buf.substr(mpos, 2));
-    if (mi < 0 || mi > 59)
+  try {
+    auto hi = std::stoi(buf.substr(0, 2));
+    if (hi < 0 || hi > 23)
       return printWarning();
-    time_.minute = std::stoi(buf.substr(mpos, 2));
-  } else {
-    time_.minute = 0;
-  }
-  if (buf.size() > 5) {
-    auto si = std::stoi(buf.substr(spos, 2));
-    if (si < 0 || si > 60)
-      return printWarning();
-    time_.second = std::stoi(buf.substr(spos, 2));
-  } else {
-    time_.second = 0;
-  }
-
-  auto fpos = buf.find('+');
-  if (fpos == std::string::npos)
-    fpos = buf.find('-');
-
-  if (fpos != std::string::npos) {
-    auto format = buf.substr(fpos, buf.size());
-    auto posColon = format.find(':');
-    if (posColon == std::string::npos) {
-      // Extended format
-      auto tzhi = std::stoi(format.substr(0, 3));
-      if (tzhi < -23 || tzhi > 23)
+    time_.hour = hi;
+    if (buf.size() > 3) {
+      auto mi = std::stoi(buf.substr(mpos, 2));
+      if (mi < 0 || mi > 59)
         return printWarning();
-      time_.tzHour = tzhi;
-      if (format.size() > 3) {
-        int minute = std::stoi(format.substr(3));
+      time_.minute = std::stoi(buf.substr(mpos, 2));
+    } else {
+      time_.minute = 0;
+    }
+    if (buf.size() > 5) {
+      auto si = std::stoi(buf.substr(spos, 2));
+      if (si < 0 || si > 60)
+        return printWarning();
+      time_.second = std::stoi(buf.substr(spos, 2));
+    } else {
+      time_.second = 0;
+    }
+
+    auto fpos = buf.find('+');
+    if (fpos == std::string::npos)
+      fpos = buf.find('-');
+
+    if (fpos != std::string::npos) {
+      auto format = buf.substr(fpos, buf.size());
+      // Use the sign of the raw offset string rather than of the parsed
+      // tzHour: when the hour magnitude is 0 (e.g. "-00:30"), std::stoi
+      // returns 0, which loses the '-' sign that std::stoi("-00") cannot
+      // preserve. format always starts with '+' or '-' (see fpos above).
+      const bool negative = format.at(0) == '-';
+      auto posColon = format.find(':');
+      if (posColon == std::string::npos) {
+        // Extended format
+        auto tzhi = std::stoi(format.substr(0, 3));
+        if (tzhi < -23 || tzhi > 23)
+          return printWarning();
+        time_.tzHour = tzhi;
+        if (format.size() > 3) {
+          int minute = std::stoi(format.substr(3));
+          if (minute < 0 || minute > 59)
+            return printWarning();
+          time_.tzMinute = negative ? -minute : minute;
+        }
+      } else {
+        // Basic format
+        auto tzhi = std::stoi(format.substr(0, posColon));
+        if (tzhi < -23 || tzhi > 23)
+          return printWarning();
+        time_.tzHour = tzhi;
+        int minute = std::stoi(format.substr(posColon + 1));
         if (minute < 0 || minute > 59)
           return printWarning();
-        time_.tzMinute = time_.tzHour < 0 ? -minute : minute;
+        time_.tzMinute = negative ? -minute : minute;
       }
-    } else {
-      // Basic format
-      auto tzhi = std::stoi(format.substr(0, posColon));
-      if (tzhi < -23 || tzhi > 23)
-        return printWarning();
-      time_.tzHour = tzhi;
-      int minute = std::stoi(format.substr(posColon + 1));
-      if (minute < 0 || minute > 59)
-        return printWarning();
-      time_.tzMinute = time_.tzHour < 0 ? -minute : minute;
     }
+  } catch (std::exception&) {
+    // std::stoi might throw an exception if the syntax is invalid.
+    return printWarning();
   }
   return 0;
 }

@@ -596,7 +596,8 @@ namespace Exiv2 {
 
 using namespace Exiv2::Internal;
 
-MatroskaVideo::MatroskaVideo(BasicIo::UniquePtr io) : Image(ImageType::mkv, mdNone, std::move(io)) {
+MatroskaVideo::MatroskaVideo(BasicIo::UniquePtr io, const ImageCtorParams& params) :
+    Image(ImageType::mkv, mdNone, std::move(io), params) {
 }  // MatroskaVideo::MatroskaVideo
 
 std::string MatroskaVideo::mimeType() const {
@@ -642,7 +643,7 @@ void MatroskaVideo::decodeBlock() {
 
   uint32_t block_size = findBlockSize(buf[0]);  // 0-8
   if (block_size > 0)
-    io_->read(buf + 1, block_size - 1);
+    io_->readOrThrow(buf + 1, block_size - 1, ErrorCode::kerCorruptedMetadata);
 
   auto tag_id = returnTagValue(buf, block_size);
   const MatroskaTag* tag = Exiv2::find(matroskaTags, tag_id);
@@ -659,11 +660,11 @@ void MatroskaVideo::decodeBlock() {
     return;
   }
 
-  io_->read(buf, 1);
+  io_->readOrThrow(buf, 1, ErrorCode::kerCorruptedMetadata);
   block_size = findBlockSize(buf[0]);  // 0-8
 
   if (block_size > 0)
-    io_->read(buf + 1, block_size - 1);
+    io_->readOrThrow(buf + 1, block_size - 1, ErrorCode::kerCorruptedMetadata);
   size_t size = returnTagValue(buf, block_size);
 
   if (tag->isComposite() && !tag->isSkipped())
@@ -683,7 +684,7 @@ void MatroskaVideo::decodeBlock() {
   }
 
   DataBuf buf2(bufMaxSize + 1);
-  io_->read(buf2.data(), size);
+  io_->readOrThrow(buf2.data(), size, ErrorCode::kerCorruptedMetadata);
   switch (tag->_type) {
     case InternalField:
       decodeInternalTags(tag, buf2.data());
@@ -913,8 +914,8 @@ uint32_t MatroskaVideo::findBlockSize(byte b) {
   return 0;
 }
 
-Image::UniquePtr newMkvInstance(BasicIo::UniquePtr io, bool /*create*/) {
-  auto image = std::make_unique<MatroskaVideo>(std::move(io));
+Image::UniquePtr newMkvInstance(BasicIo::UniquePtr io, const ImageCtorParams& params) {
+  auto image = std::make_unique<MatroskaVideo>(std::move(io), params);
   if (!image->good()) {
     return nullptr;
   }

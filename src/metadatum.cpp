@@ -12,6 +12,10 @@ Key::UniquePtr Key::clone() const {
   return UniquePtr(clone_());
 }
 
+std::ostream& Key::write(std::ostream& os) const {
+  return os << key();
+}
+
 Metadatum::~Metadatum() = default;
 
 std::string Metadatum::print(const ExifData* pMetadata) const {

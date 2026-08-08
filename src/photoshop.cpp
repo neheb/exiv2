@@ -2,10 +2,13 @@
 
 #include "photoshop.hpp"
 
+#include "basicio.hpp"
 #include "enforce.hpp"
+#include "error.hpp"
 #include "image.hpp"
 #include "safe_op.hpp"
 
+#include <array>
 #include <cstring>
 
 #ifdef EXIV2_DEBUG_MESSAGES
@@ -14,11 +17,24 @@
 
 namespace Exiv2 {
 
+const char Photoshop::irbId_[4][4] = {
+    {'8', 'B', 'I', 'M'},
+    {'A', 'g', 'H', 'g'},
+    {'D', 'C', 'S', 'R'},
+    {'P', 'H', 'U', 'T'},
+};
+
+const char Photoshop::ps3Id_[14] = {'P', 'h', 'o', 't', 'o', 's', 'h', 'o', 'p', ' ', '3', '.', '0', '\0'};
+
 bool Photoshop::isIrb(const byte* pPsData) {
-  if (pPsData == nullptr) {
+  if (pPsData == nullptr)
     return false;
-  }
-  return std::any_of(irbId_.begin(), irbId_.end(), [pPsData](auto id) { return memcmp(pPsData, id, 4) == 0; });
+
+  for (auto id : irbId_)
+    if (std::equal(id, id + 4, pPsData))
+      return true;
+
+  return false;
 }
 
 bool Photoshop::valid(const byte* pPsData, size_t sizePsData) {
@@ -118,6 +134,28 @@ int Photoshop::locatePreviewIrb(const byte* pPsData, size_t sizePsData, const by
   return locateIrb(pPsData, sizePsData, preview_, record, sizeHdr, sizeData);
 }
 
+uint32_t Photoshop::writeIrb(BasicIo& out, uint16_t resourceId, const byte* data, size_t dataSize) {
+  byte buf[12];
+  std::copy_n(irbId_[0], 4, buf);
+  us2Data(buf + 4, resourceId, bigEndian);
+  us2Data(buf + 6, 0, bigEndian);
+  ul2Data(buf + 8, static_cast<uint32_t>(dataSize), bigEndian);
+
+  if (out.write(buf, 12) != 12)
+    throw Error(ErrorCode::kerImageWriteFailed);
+  if (out.write(data, dataSize) != dataSize)
+    throw Error(ErrorCode::kerImageWriteFailed);
+
+  auto total = static_cast<uint32_t>(12 + dataSize);
+  if (dataSize & 1) {
+    byte pad = 0;
+    if (out.write(&pad, 1) != 1)
+      throw Error(ErrorCode::kerImageWriteFailed);
+    total++;
+  }
+  return total;
+}
+
 DataBuf Photoshop::setIptcIrb(const byte* pPsData, size_t sizePsData, const IptcData& iptcData) {
 #ifdef EXIV2_DEBUG_MESSAGES
   std::cerr << "IRB block at the beginning of Photoshop::setIptcIrb\n";
@@ -144,7 +182,7 @@ DataBuf Photoshop::setIptcIrb(const byte* pPsData, size_t sizePsData, const Iptc
   // Write new iptc record if we have it
   if (DataBuf rawIptc = IptcParser::encode(iptcData); !rawIptc.empty()) {
     std::array<byte, 12> tmpBuf;
-    std::copy_n(Photoshop::irbId_.front(), 4, tmpBuf.begin());
+    std::copy_n(Photoshop::irbId_[0], 4, tmpBuf.begin());
     us2Data(tmpBuf.data() + 4, iptc_, bigEndian);
     tmpBuf[6] = 0;
     tmpBuf[7] = 0;

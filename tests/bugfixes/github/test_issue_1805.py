@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-import unittest
+import pytest
 import system_tests
 from system_tests import CaseMeta, check_no_ASAN_UBSAN_errors
 
@@ -9,7 +9,7 @@ from system_tests import CaseMeta, check_no_ASAN_UBSAN_errors
 # https://exiftool.org/makernote_types.html
 
 
-@unittest.skip("Skipping test using option -pR (only for Debug mode)")
+@pytest.mark.skip("Skipping test using option -pR (only for Debug mode)")
 class exiv2pRHeaderTest(metaclass=CaseMeta):
     url = "https://github.com/Exiv2/exiv2/issues/1805"
 

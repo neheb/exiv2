@@ -536,11 +536,12 @@ namespace Exiv2 {
 
 using namespace Exiv2::Internal;
 
-QuickTimeVideo::QuickTimeVideo(BasicIo::UniquePtr io, size_t max_recursion_depth) :
-    Image(ImageType::qtime, mdNone, std::move(io)),
-    timeScale_(1),
+QuickTimeVideo::QuickTimeVideo(BasicIo::UniquePtr io, const ImageCtorParams& params) :
+    Image(ImageType::qtime, mdNone, std::move(io), params),
+    mvhdTimeScale_(1),
+    mdhdTimeScale_(1),
     currentStream_(Null),
-    max_recursion_depth_(max_recursion_depth) {
+    max_recursion_depth_(params.max_recursion_depth()) {
 }  // QuickTimeVideo::QuickTimeVideo
 
 std::string QuickTimeVideo::mimeType() const {
@@ -644,7 +645,7 @@ void QuickTimeVideo::tagDecoder(Exiv2::DataBuf& buf, size_t size, size_t recursi
     fileTypeDecoder(size);
 
   else if (equalsQTimeTag(buf, "trak"))
-    setMediaStream();
+    setMediaStream(size);
 
   else if (equalsQTimeTag(buf, "mvhd"))
     movieHeaderDecoder(size);
@@ -847,7 +848,7 @@ void QuickTimeVideo::CameraTagsDecoder(size_t size) {
 
 void QuickTimeVideo::userDataDecoder(size_t outer_size, size_t recursion_depth) {
   enforce(recursion_depth < max_recursion_depth_, Exiv2::ErrorCode::kerCorruptedMetadata);
-  size_t cur_pos = io_->tell();
+  const size_t start_pos = io_->tell();
   const TagVocabulary* td;
   const TagVocabulary* tv;
   const TagVocabulary* tv_internal;
@@ -858,6 +859,7 @@ void QuickTimeVideo::userDataDecoder(size_t outer_size, size_t recursion_depth) 
   std::memset(buf.data(), 0x0, buf.size());
 
   while ((size_internal / 4 != 0) && (size_internal > 0)) {
+    const size_t loop_start_pos = io_->tell();
     buf.data()[4] = '\0';
     io_->readOrThrow(buf.data(), 4);
     const size_t size = buf.read_uint32(0, bigEndian);
@@ -909,9 +911,11 @@ void QuickTimeVideo::userDataDecoder(size_t outer_size, size_t recursion_depth) 
 
     else if (td)
       tagDecoder(buf, size - 8, recursion_depth + 1);
+
+    enforce(io_->tell() <= loop_start_pos + size, Exiv2::ErrorCode::kerCorruptedMetadata);
   }
 
-  io_->seek(cur_pos + outer_size, BasicIo::beg);
+  io_->seek(start_pos + outer_size, BasicIo::beg);
 }  // QuickTimeVideo::userDataDecoder
 
 void QuickTimeVideo::NikonTagsDecoder(size_t size) {
@@ -1125,13 +1129,18 @@ void QuickTimeVideo::NikonTagsDecoder(size_t size) {
   io_->seek(cur_pos + size, BasicIo::beg);
 }  // QuickTimeVideo::NikonTagsDecoder
 
-void QuickTimeVideo::setMediaStream() {
+void QuickTimeVideo::setMediaStream(size_t atom_size) {
   size_t current_position = io_->tell();
+  size_t search_end = Safe::add(current_position, atom_size);
+  if (search_end > io_->size())
+    search_end = io_->size();
   DataBuf buf(4 + 1);
 
-  while (!io_->eof()) {
+  while (!io_->eof() && Safe::add(io_->tell(), size_t{4}) <= search_end) {
     io_->readOrThrow(buf.data(), 4);
     if (equalsQTimeTag(buf, "hdlr")) {
+      if (Safe::add(io_->tell(), size_t{12}) > search_end)
+        break;
       io_->readOrThrow(buf.data(), 4);
       io_->readOrThrow(buf.data(), 4);
       io_->readOrThrow(buf.data(), 4);
@@ -1170,7 +1179,7 @@ void QuickTimeVideo::timeToSampleDecoder() {
     if (timeOfFrames == 0)
       timeOfFrames = 1;
     xmpData_["Xmp.video.FrameRate"] =
-        static_cast<double>(totalframes) * static_cast<double>(timeScale_) / static_cast<double>(timeOfFrames);
+        static_cast<double>(totalframes) * static_cast<double>(mdhdTimeScale_) / static_cast<double>(timeOfFrames);
   }
 }  // QuickTimeVideo::timeToSampleDecoder
 
@@ -1434,9 +1443,8 @@ void QuickTimeVideo::mediaHeaderDecoder(size_t size) {
           xmpData_["Xmp.video.MediaTimeScale"] = buf.read_uint32(0, bigEndian);
         else if (currentStream_ == Audio)
           xmpData_["Xmp.audio.MediaTimeScale"] = buf.read_uint32(0, bigEndian);
-        time_scale = buf.read_uint32(0, bigEndian);
-        if (time_scale <= 0)
-          time_scale = 1;
+        time_scale = std::max(1U, buf.read_uint32(0, bigEndian));
+        mdhdTimeScale_ = time_scale;
         break;
       case MediaDuration:
         if (currentStream_ == Video)
@@ -1496,9 +1504,9 @@ void QuickTimeVideo::trackHeaderDecoder(size_t size) {
         break;
       case TrackDuration:
         if (currentStream_ == Video)
-          xmpData_["Xmp.video.TrackDuration"] = timeScale_ ? buf.read_uint32(0, bigEndian) / timeScale_ : 0;
+          xmpData_["Xmp.video.TrackDuration"] = mvhdTimeScale_ ? buf.read_uint32(0, bigEndian) / mvhdTimeScale_ : 0;
         else if (currentStream_ == Audio)
-          xmpData_["Xmp.audio.TrackDuration"] = timeScale_ ? buf.read_uint32(0, bigEndian) / timeScale_ : 0;
+          xmpData_["Xmp.audio.TrackDuration"] = mvhdTimeScale_ ? buf.read_uint32(0, bigEndian) / mvhdTimeScale_ : 0;
         break;
       case TrackLayer:
         if (currentStream_ == Video)
@@ -1555,13 +1563,11 @@ void QuickTimeVideo::movieHeaderDecoder(size_t size) {
         break;
       case TimeScale:
         xmpData_["Xmp.video.TimeScale"] = buf.read_uint32(0, bigEndian);
-        timeScale_ = buf.read_uint32(0, bigEndian);
-        if (timeScale_ <= 0)
-          timeScale_ = 1;
+        mvhdTimeScale_ = std::max(1U, buf.read_uint32(0, bigEndian));
         break;
       case Duration:
-        if (timeScale_ != 0) {  // To prevent division by zero
-          xmpData_["Xmp.video.Duration"] = buf.read_uint32(0, bigEndian) * 1000 / timeScale_;
+        if (mvhdTimeScale_ != 0) {  // To prevent division by zero
+          xmpData_["Xmp.video.Duration"] = buf.read_uint32(0, bigEndian) * 1000 / mvhdTimeScale_;
         }
         break;
       case PreferredRate:
@@ -1599,8 +1605,8 @@ void QuickTimeVideo::movieHeaderDecoder(size_t size) {
   io_->readOrThrow(buf.data(), size % 4);
 }  // QuickTimeVideo::movieHeaderDecoder
 
-Image::UniquePtr newQTimeInstance(BasicIo::UniquePtr io, bool /*create*/) {
-  auto image = std::make_unique<QuickTimeVideo>(std::move(io));
+Image::UniquePtr newQTimeInstance(BasicIo::UniquePtr io, const ImageCtorParams& params) {
+  auto image = std::make_unique<QuickTimeVideo>(std::move(io), params);
   if (!image->good()) {
     return nullptr;
   }

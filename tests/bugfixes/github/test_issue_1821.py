@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from system_tests import CaseMeta, path
-import unittest
+import pytest
 
 
 # Issue #1821 is a memory leak caused by buggy third-party
 # code in the xmpsdk sub-directory, so it isn't easy for us to fix.
 # This test will fail when run with an ASAN build.
-@unittest.skip("Skipping test until #1821 is fixed")
+@pytest.mark.skip("Skipping test until #1821 is fixed")
 class MemoryLeakAddBinding(metaclass=CaseMeta):
     """
     Regression test for the bug described in:

@@ -7,19 +7,21 @@
 
 #include "types.hpp"
 
-#include <array>
+#include <cstddef>
+#include <cstdint>
 
 namespace Exiv2 {
 // Forward declarations
+class BasicIo;
 class IptcData;
 
 /// @brief Helper class, has methods to deal with %Photoshop "Information Resource Blocks" (IRBs).
 struct EXIV2API Photoshop {
   // Todo: Public for now
-  static constexpr std::array<const char*, 4> irbId_{"8BIM", "AgHg", "DCSR", "PHUT"};  //!< %Photoshop IRB markers
-  static constexpr auto ps3Id_ = "Photoshop 3.0\0";                                    //!< %Photoshop marker
-  static constexpr uint16_t iptc_ = 0x0404;                                            //!< %Photoshop IPTC marker
-  static constexpr uint16_t preview_ = 0x040c;                                         //!< %Photoshop preview marker
+  static const char irbId_[4][4];               //!< %Photoshop IRB markers
+  static const char ps3Id_[14];                 //!< %Photoshop marker
+  static constexpr uint16_t iptc_ = 0x0404;     //!< %Photoshop IPTC marker
+  static constexpr uint16_t preview_ = 0x040c;  //!< %Photoshop preview marker
 
   /// @brief Checks an IRB
   /// @param pPsData  Existing IRB buffer. It is expected to be of size 4.
@@ -64,6 +66,14 @@ struct EXIV2API Photoshop {
   /// @param iptcData   Iptc data to embed, may be empty
   /// @return A data buffer containing the new IRB buffer, may have 0 size
   static DataBuf setIptcIrb(const byte* pPsData, size_t sizePsData, const IptcData& iptcData);
+
+  /// @brief Write a complete Photoshop IRB resource block to an output stream.
+  /// @param out         Output stream
+  /// @param resourceId  Resource ID
+  /// @param data        Payload data
+  /// @param dataSize    Size of payload data
+  /// @return The total number of bytes written (header + data + padding)
+  static uint32_t writeIrb(BasicIo& out, uint16_t resourceId, const byte* data, size_t dataSize);
 };
 }  // namespace Exiv2
 

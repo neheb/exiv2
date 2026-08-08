@@ -899,7 +899,7 @@ All project resources are accessible from the project website.
 
 ## License
 
-Copyright (C) 2004-2024 Exiv2 authors.
+Copyright (C) 2004-2026 Exiv2 authors.
 You should have received a copy of the file [COPYING](COPYING) which details the GPLv2 license.
 
 Exiv2 is free software; you can redistribute it and/or modify
@@ -934,8 +934,8 @@ You execute the Test Suite using CTest with the command `$ ctest --test-dir buil
 The build creates 6 tests: bashTests, bugfixTests, lensTests, tiffTests, unitTests and versionTests.  You can run all tests or a subset. To list all available tests, execute ctest with the `-N` or `--show-only` option, which disables execution:
 
 ```bash
-.../exiv2/ $ ctest --test-dir build --show-only
-Test project ...main/exiv2
+.../exiv2 $ ctest --test-dir build --show-only
+Test project .../exiv2/build
   Test #1: bashTests
   Test #2: bugfixTests
   Test #3: lensTests
@@ -982,14 +982,13 @@ Exiv2 optionally uses several different environment variables when building or t
 | Variable           | Default                    | Platforms          | Purpose |
 |:--                 |:--                         |:--                 |:--      |
 | EXIV2_BINDIR       | **\<exiv2dir\>/build/bin** | All Platforms      | Path of built binaries (e.g., exiv2.exe) |
-| EXIV2_PORT         | **12762**<br>**12671**<br>**12760**             | Cygwin<br>MinGW/msys2<br>Other Platforms | Test TCP/IP Port   |
 | EXIV2_HTTP         | **http://localhost**       | All Platforms      | Test http server   |
 | EXIV2_ECHO         | _**not set**_              | All Platforms      | For debugging bashTests |
 | VALGRIND           | _**not set**_              | All Platforms      | For debugging bashTests |
 | VERBOSE            | _**not set**_              | Makefile platforms | Instructs make to report its actions |
 | PATH<br>DYLD\_LIBRARY\_PATH<br>LD\_LIBRARY\_PATH    | $EXIV2\_BINDIR/../lib | Windows<br>macOS<br>Other platforms | Path of dynamic libraries |
 
-The Variable EXIV2\_PORT or EXIV2\_HTTP can be set to None to skip http tests.  The http server is started with the command `python3 -m http.server $port`.  On Windows, you will need to run this manually _**once**_ to authorise the firewall to permit python to use the port.
+The Variable EXIV2\_HTTP can be set to None to skip http tests.  The http server is started with the command `python3 -m http.server $port`.  On Windows, you will need to run this manually _**once**_ to authorise the firewall to permit python to use the port.
 
 [TOC](#TOC)
 <div id="TestsOnUnix">
@@ -1061,19 +1060,19 @@ You can build with Visual Studio using Conan.  The is described in detail in [RE
 As a summary, the procedure is:
 
 ```
-c:\...\exiv2\build>conan install . --build missing --profile msvc2019Release
-c:\...\exiv2\build>cmake -S . B build -DEXIV2_BUILD_UNIT_TESTS=ON -G "Visual Studio 16 2019"
-c:\...\exiv2\build>cmake --build build --config Release
+c:\...\exiv2>conan install . --build missing --profile msvc2019Release
+c:\...\exiv2>cmake -S . B build -DEXIV2_BUILD_UNIT_TESTS=ON -G "Visual Studio 16 2019"
+c:\...\exiv2>cmake --build build --config Release
 ... lots of output from compiler and linker ...
-c:\...\exiv2\build>ctest --test-dir build -C Release
+c:\...\exiv2>ctest --test-dir build -C Release
 ```
 
 If you wish to use an environment variables, use set:
 
 ```
-set EXIV2_PORT=54321
+set EXIV2_HTTP="http://127.0.0.1"
 ctest --test-dir build -C Release --verbose -R bash
-set EXIV2_PORT=
+set EXIV2_HTTP=
 ```
 
 [TOC](#TOC)
@@ -1255,7 +1254,6 @@ cmake -S . -B build
       -DEXIV2_ENABLE_WEBREADY=ON
       -DEXIV2_ENABLE_BMFF=ON
       -DEXIV2_BUILD_UNIT_TESTS=ON
-      ..
 
 cmake --build build
 ```
@@ -1403,8 +1401,6 @@ To install a package:
 $ sudo pkg install developer/gcc-7
 ```
 
-
 [TOC](#TOC)
 
-Written by Robin Mills<br>robin@clanmills.com<br>Updated: 2022-02-22
-
+Updated: 2026-02-24

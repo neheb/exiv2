@@ -179,7 +179,7 @@ void findXmp(size_t& xmpPos, size_t& xmpSize, const byte* data, size_t startPos,
 
       // search for valid XMP trailer
       for (size_t trailerPos = xmpPos + header.size(); trailerPos < size; trailerPos++) {
-        if (data[xmpPos] != '\x00' && data[xmpPos] != '<')
+        if (data[trailerPos] != '\x00' && data[trailerPos] != '<')
           continue;
         for (const auto& [trailer, readOnly] : xmpTrailers) {
           if (trailerPos + trailer.size() > size)
@@ -1023,9 +1023,10 @@ void readWriteEpsMetadata(BasicIo& io, std::string& xmpPacket, NativePreviewList
 // *****************************************************************************
 // class member definitions
 namespace Exiv2 {
-EpsImage::EpsImage(BasicIo::UniquePtr io, bool create) : Image(ImageType::eps, mdXmp, std::move(io)) {
+EpsImage::EpsImage(BasicIo::UniquePtr io, const ImageCtorParams& params) :
+    Image(ImageType::eps, mdXmp, std::move(io), params) {
   // LogMsg::setLevel(LogMsg::debug);
-  if (create && io_->open() == 0) {
+  if (params.create() && io_->open() == 0) {
 #ifdef DEBUG
     EXV_DEBUG << "Exiv2::EpsImage:: Creating blank EPS image\n";
 #endif
@@ -1091,8 +1092,8 @@ void EpsImage::writeMetadata() {
 
 // *************************************************************************
 // free functions
-Image::UniquePtr newEpsInstance(BasicIo::UniquePtr io, bool create) {
-  auto image = std::make_unique<EpsImage>(std::move(io), create);
+Image::UniquePtr newEpsInstance(BasicIo::UniquePtr io, const ImageCtorParams& params) {
+  auto image = std::make_unique<EpsImage>(std::move(io), params);
   if (!image->good()) {
     return nullptr;
   }

@@ -7,6 +7,7 @@
 #include "i18n.h"  // NLS support.
 #include "image.hpp"
 #include "image_int.hpp"
+#include "safe_op.hpp"
 #include "tags.hpp"
 #include "tags_int.hpp"
 
@@ -134,6 +135,8 @@ const CiffComponent::UniquePtr& CiffEntry::doAdd(UniquePtr /*component*/) {
 const CiffComponent::UniquePtr& CiffDirectory::doAdd(UniquePtr component) {
   return components_.emplace_back(std::move(component));
 }  // CiffDirectory::doAdd
+
+const byte CiffHeader::signature_[] = {'H', 'E', 'A', 'P', 'C', 'C', 'D', 'R'};
 
 void CiffHeader::read(const byte* pData, size_t size) {
   if (size < 14)
@@ -281,7 +284,7 @@ void CiffHeader::write(Blob& blob) const {
   ul2Data(buf, offset_, byteOrder_);
   append(blob, buf, 4);
   o += 4;
-  append(blob, reinterpret_cast<const byte*>(signature_), 8);
+  append(blob, signature_, 8);
   o += 8;
   // Pad as needed
   if (!pPadding_.empty()) {
@@ -401,7 +404,7 @@ void CiffComponent::print(std::ostream& os, ByteOrder byteOrder, const std::stri
   doPrint(os, byteOrder, prefix);
 }
 
-void CiffComponent::doPrint(std::ostream& os, ByteOrder byteOrder, const std::string& prefix) const {
+void CiffComponent::doPrint(std::ostream& os, ByteOrder byteOrder, std::string_view prefix) const {
   os << stringFormat("{}{} = 0x{:04x}, {} = 0x{:04x}, {} = {}, {} = {}, {} = {}\n", prefix, _("tag"), tagId(), _("dir"),
                      dir(), _("type"), TypeInfo::typeName(typeId()), _("size"), size_, _("offset"), offset_);
 
@@ -414,10 +417,10 @@ void CiffComponent::doPrint(std::ostream& os, ByteOrder byteOrder, const std::st
   }
 }  // CiffComponent::doPrint
 
-void CiffDirectory::doPrint(std::ostream& os, ByteOrder byteOrder, const std::string& prefix) const {
+void CiffDirectory::doPrint(std::ostream& os, ByteOrder byteOrder, std::string_view prefix) const {
   CiffComponent::doPrint(os, byteOrder, prefix);
   for (auto&& component : components_) {
-    component->print(os, byteOrder, prefix + "   ");
+    component->print(os, byteOrder, stringFormat("{}    ", prefix));
   }
 }  // CiffDirectory::doPrint
 
@@ -617,7 +620,7 @@ const CrwMapping* CrwMap::crwMapping(uint16_t crwDir, uint16_t crwTagId) {
 
 void CrwMap::decode0x0805(const CiffComponent& ciffComponent, const CrwMapping* /*pCrwMapping*/, Image& image,
                           ByteOrder /*byteOrder*/) {
-  auto s = Exiv2::toString(ciffComponent.pData());
+  auto s = std::string(reinterpret_cast<const char*>(ciffComponent.pData()), ciffComponent.size());
   image.setComment(s);
 }  // CrwMap::decode0x0805
 
@@ -794,6 +797,7 @@ void CrwMap::decodeBasic(const CiffComponent& ciffComponent, const CrwMapping* p
       // by default, use the size from the directory entry
       size = ciffComponent.size();
     }
+    enforce(size <= ciffComponent.size(), ErrorCode::kerCorruptedMetadata);
     value->read(ciffComponent.pData(), size, byteOrder);
   }
   // Add metadatum to exif data
@@ -987,9 +991,10 @@ DataBuf packIfdId(const ExifData& exifData, IfdId ifdId, ByteOrder byteOrder) {
   for (auto&& exif : exifData) {
     if (exif.ifdId() != ifdId)
       continue;
-    const uint16_t s = (exif.tag() * 2) + static_cast<uint16_t>(exif.size());
+    const size_t s = Safe::add<size_t>(exif.tag() * 2, exif.size());
+    enforce(s <= static_cast<size_t>(std::numeric_limits<uint16_t>::max()), ErrorCode::kerCorruptedMetadata);
     if (s <= size) {
-      len = std::max(len, s);
+      len = std::max(len, static_cast<uint16_t>(s));
       exif.copy(buf.data(exif.tag() * 2), byteOrder);
     } else {
       EXV_ERROR << "packIfdId out-of-bounds error: s = " << std::dec << s << "\n";

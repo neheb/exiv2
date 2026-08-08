@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import system_tests
-import unittest
+import pytest
 
 
-@unittest.skip("Skipping test using option -pR (only for Debug mode)")
+@pytest.mark.skip("Skipping test using option -pR (only for Debug mode)")
 class UncontrolledRecursion(metaclass=system_tests.CaseMeta):
     url = "https://github.com/Exiv2/exiv2/issues/216"
 

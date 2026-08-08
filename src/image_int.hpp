@@ -10,20 +10,17 @@
 #include "slice.hpp"  // for Slice
 
 #include <cstddef>  // for size_t
-#include <cstdint>  // for int32_t
 #include <ostream>  // for ostream, basic_ostream::put
 #include <string>
 
-#if __has_include(<format>)
+#ifdef EXV_HAVE_STD_FORMAT
 #include <format>
-#endif
-#ifndef EXV_HAVE_STD_FORMAT
+#define stringFormat std::format
+#define stringFormatTo std::format_to
+#else
 #include <fmt/format.h>
 #define stringFormat fmt::format
 #define stringFormatTo fmt::format_to
-#else
-#define stringFormat std::format
-#define stringFormatTo std::format_to
 #endif
 
 // *****************************************************************************

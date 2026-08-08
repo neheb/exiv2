@@ -17,9 +17,6 @@ static void mini9(const char* path);
 
 int main(int argc, char* const argv[]) {
   try {
-    Exiv2::XmpParser::initialize();
-    ::atexit(Exiv2::XmpParser::terminate);
-
     if (argc != 2) {
       std::cout << "Usage: " << argv[0] << " file\n";
       return EXIT_FAILURE;
@@ -64,7 +61,8 @@ void mini1(const char* path) {
 }
 
 void mini9(const char* path) {
-  TiffImage tiffImage(std::make_unique<FileIo>(path), false);
+  const Exiv2::ImageCtorParams params(false, 500);
+  TiffImage tiffImage(std::make_unique<FileIo>(path), params);
   tiffImage.readMetadata();
 
   std::cout << "MIME type:  " << tiffImage.mimeType() << "\n";
